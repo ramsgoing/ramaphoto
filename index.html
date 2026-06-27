@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ramdhani Photo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1e1e1e;
+      --border: #2a2a2a;
+      --gold: #c9a84c;
+      --gold-light: #e2c27d;
+      --text: #f0f0f0;
+      --muted: #888;
+      --white: #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px;
+      height: 64px;
+      background: rgba(13,13,13,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 600; font-size: 15px; letter-spacing: 0.04em;
+      color: var(--text); text-decoration: none;
+    }
+    .nav-logo svg { color: var(--gold); }
+    .nav-links {
+      display: flex; align-items: center; gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted); text-decoration: none;
+      font-size: 14px; font-weight: 500; transition: color .2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--white); }
+    .nav-links a.active {
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 2px;
+    }
+    .nav-links .nav-icon { color: var(--muted); cursor: pointer; transition: color .2s; }
+    .nav-links .nav-icon:hover { color: var(--white); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex; align-items: center;
+      overflow: hidden;
+      padding-top: 64px;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #0d0d0d 50%, #1a1410 100%);
+    }
+    .hero-img-wrap {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 55%;
+      overflow: hidden;
+    }
+    .hero-img-wrap::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0; width: 60%;
+      background: linear-gradient(to right, var(--bg), transparent);
+      z-index: 1;
+    }
+    .hero-img-wrap img,
+    .hero-img-wrap .hero-placeholder {
+      width: 100%; height: 100%; object-fit: cover;
+      opacity: 0.55;
+    }
+    .hero-placeholder {
+      background: linear-gradient(135deg, #1a1208 0%, #2a1f0a 40%, #0d0d0d 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero-placeholder svg { opacity: 0.15; }
+    .hero-content {
+      position: relative; z-index: 2;
+      padding: 0 48px;
+      max-width: 600px;
+    }
+    .hero-eyebrow {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
+      color: var(--gold); text-transform: uppercase; margin-bottom: 20px;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 1.08;
+      color: var(--white);
+      margin-bottom: 20px;
+    }
+    .hero-title .accent { color: var(--gold); font-style: italic; }
+    .hero-sub {
+      color: #aaa; font-size: 15px; line-height: 1.7;
+      max-width: 360px; margin-bottom: 36px;
+    }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 24px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: all .22s;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--gold);
+      color: #111;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
+
+    /* ── ALBUMS SECTION ── */
+    .section { padding: 80px 48px; }
+    .section-eyebrow {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
+      color: var(--gold); text-transform: uppercase; margin-bottom: 8px;
+    }
+    .section-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px; margin-bottom: 36px;
+    }
+    .section-title {
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 700; color: var(--white);
+    }
+    .search-box {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 16px;
+      min-width: 260px;
+    }
+    .search-box input {
+      background: none; border: none; outline: none;
+      color: var(--text); font-size: 14px; width: 100%;
+    }
+    .search-box input::placeholder { color: var(--muted); }
+    .search-box svg { color: var(--muted); flex-shrink: 0; }
+
+    /* ── ALBUM GRID ── */
+    .album-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .album-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: transform .22s, border-color .22s;
+      cursor: pointer;
+    }
+    .album-card:hover { transform: translateY(-4px); border-color: var(--gold); }
+    .album-thumb {
+      position: relative; height: 180px; overflow: hidden;
+    }
+    .album-thumb .thumb-img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .35s;
+    }
+    .album-card:hover .thumb-img { transform: scale(1.05); }
+    .thumb-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .photo-count {
+      position: absolute; top: 12px; left: 12px;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+      color: var(--white); font-size: 12px; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px;
+    }
+    .album-info { padding: 14px 16px 0; }
+    .album-name {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 700; font-size: 15px; color: var(--white);
+      margin-bottom: 4px;
+    }
+    .album-name svg { color: var(--gold); flex-shrink: 0; }
+    .album-meta { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+    .album-meta span { display: block; }
+    .album-footer {
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+    }
+    .btn-drive {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 10px;
+      background: var(--surface2); border: none;
+      border-radius: 8px; color: var(--text);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: background .2s; text-decoration: none;
+    }
+    .btn-drive:hover { background: #2a2a2a; }
+
+    /* Google Drive colors */
+    .drive-icon { display: flex; gap: 0; }
+
+    .btn-all {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin: 0 auto;
+      padding: 13px 28px;
+      background: transparent; border: 1.5px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: all .22s; width: fit-content;
+    }
+    .btn-all:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── FEATURES ── */
+    .features {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin: 0 48px;
+      padding: 36px 48px;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    .feature {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .feature-icon {
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface2); border-radius: 10px;
+      color: var(--gold);
+    }
+    .feature h4 { font-size: 14px; font-weight: 600; color: var(--white); }
+    .feature p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .feature-divider {
+      width: 1px; background: var(--border);
+    }
+
+    /* ── MOBILE PREVIEW ── */
+    .mobile-section {
+      padding: 80px 48px;
+      display: grid; grid-template-columns: 280px 1fr;
+      gap: 60px; align-items: center;
+    }
+    .mobile-left h3 {
+      font-size: 28px; font-weight: 700; color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .mobile-left p { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: 24px; }
+    .mobile-scan {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--muted); font-size: 13px;
+    }
+    .qr-box {
+      width: 80px; height: 80px;
+      background: var(--white);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 6px;
+    }
+    .qr-inner {
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        #000 0px, #000 4px,
+        #fff 4px, #fff 8px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        #000 0px, #000 4px,
+        #fff 4px, #fff 8px
+      );
+      background-blend-mode: multiply;
+      border-radius: 2px;
+    }
+    .mobile-phones {
+      display: flex; gap: 20px; align-items: flex-end;
+    }
+    .phone-frame {
+      background: #111;
+      border: 2px solid #2a2a2a;
+      border-radius: 28px;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .phone-frame::before {
+      content: '';
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      width: 60px; height: 4px;
+      background: #2a2a2a; border-radius: 2px; z-index: 2;
+    }
+    .phone-lg { width: 200px; }
+    .phone-sm { width: 180px; }
+    .phone-content { padding: 24px 12px 12px; }
+    .phone-navbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 0 10px;
+      border-bottom: 1px solid #222;
+      margin-bottom: 10px;
+    }
+    .phone-logo { font-size: 8px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 4px; }
+    .phone-hero-bg {
+      background: linear-gradient(135deg, #1a1208, #0d0d0d);
+      border-radius: 10px; padding: 14px 10px; margin-bottom: 10px;
+    }
+    .ph-eyebrow { font-size: 6px; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 4px; }
+    .ph-title { font-size: 12px; font-weight: 700; color: #fff; line-height: 1.2; margin-bottom: 6px; }
+    .ph-title span { color: var(--gold); font-style: italic; }
+    .ph-sub { font-size: 6px; color: #888; line-height: 1.5; margin-bottom: 10px; }
+    .ph-btn {
+      background: var(--gold); color: #111; font-size: 7px; font-weight: 700;
+      padding: 6px; border-radius: 6px; text-align: center; margin-bottom: 4px;
+    }
+    .ph-btn-outline {
+      border: 1px solid #333; color: #aaa; font-size: 7px;
+      padding: 6px; border-radius: 6px; text-align: center;
+    }
+    .ph-section-label { font-size: 5px; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 3px; }
+    .ph-section-title { font-size: 9px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .ph-search {
+      background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px;
+      padding: 5px 8px; font-size: 6px; color: #555; margin-bottom: 8px;
+    }
+    .ph-album-row {
+      display: flex; align-items: center; gap: 8px; padding: 6px 0;
+      border-bottom: 1px solid #1e1e1e;
+    }
+    .ph-album-thumb {
+      width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;
+    }
+    .ph-album-name { font-size: 7px; font-weight: 600; color: #fff; }
+    .ph-album-meta { font-size: 5px; color: #555; }
+    .ph-album-all {
+      text-align: center; font-size: 7px; color: #aaa;
+      padding: 8px 0; border: 1px solid #2a2a2a; border-radius: 6px; margin-top: 8px;
+    }
+    .ph-drive-btn {
+      background: var(--gold); color: #111;
+      font-size: 7px; font-weight: 700;
+      padding: 7px; border-radius: 6px; text-align: center; margin-bottom: 6px;
+    }
+    .ph-back-btn {
+      border: 1px solid #2a2a2a; color: #aaa;
+      font-size: 7px; padding: 7px; border-radius: 6px; text-align: center;
+    }
+    .ph-detail-title { font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .ph-detail-meta { font-size: 6px; color: #666; margin-bottom: 8px; }
+    .ph-photo-count-label { font-size: 8px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+    .ph-detail-img {
+      width: 100%; height: 80px; border-radius: 8px; object-fit: cover; margin-bottom: 10px;
+    }
+    .ph-detail-placeholder {
+      width: 100%; height: 80px; border-radius: 8px;
+      background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 10px;
+    }
+    .ph-note { font-size: 6px; color: #555; text-align: center; line-height: 1.5; margin-bottom: 8px; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 28px 48px;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 13px;
+    }
+
+    /* ── RESPONSIVE ── */
+    /* ── ABOUT ── */
+    .about-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 20px; max-width: 600px;
+    }
+    .about-card {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px 28px;
+      transition: border-color .2s;
+    }
+    .about-card:hover { border-color: var(--gold); }
+    .about-icon {
+      width: 44px; height: 44px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface2); border-radius: 10px;
+      color: var(--gold);
+    }
+    .about-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .about-value {
+      font-size: 15px; font-weight: 600; color: var(--white);
+      text-decoration: none; transition: color .2s;
+    }
+    .about-value:hover { color: var(--gold); }
+
+    @media (max-width: 900px) {
+      nav { padding: 0 24px; }
+      .section { padding: 60px 24px; }
+      .album-grid { grid-template-columns: repeat(2, 1fr); }
+      .features { margin: 0 24px; grid-template-columns: 1fr; }
+      .feature-divider { display: none; }
+      .hero-content { padding: 0 24px; }
+      .about-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .album-grid { grid-template-columns: 1fr; }
+      .mobile-phones { flex-direction: column; align-items: center; }
+      .section-header { flex-direction: column; }
+      .search-box { min-width: unset; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+    RAMDHANI PHOTO
+  </a>
+  <ul class="nav-links">
+    <li><a href="#" class="active">Home</a></li>
+    <li><a href="#albums">Albums</a></li>
+    <li><a href="#about">About</a></li>
+    <li>
+      <a href="#" class="nav-icon" aria-label="Instagram">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+        </svg>
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-img-wrap">
+    <div class="hero-placeholder">
+      <svg width="160" height="160" fill="none" stroke="white" stroke-width="1" viewBox="0 0 24 24">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+  </div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Find Your Moment</p>
+    <h1 class="hero-title">
+      Photos That<br>Tell <span class="accent">Your</span> Story.
+    </h1>
+    <p class="hero-sub">Setiap momen berharga layak untuk diabadikan. Temukan foto kamu di album yang tersedia.</p>
+    <div class="hero-btns">
+      <a href="#albums" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M8 5V3h8v2"/></svg>
+        Lihat Album
+      </a>
+      <a href="#" class="btn btn-outline">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>
+        Follow Instagram
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ALBUMS -->
+<section class="section" id="albums">
+  <p class="section-eyebrow">Available Albums</p>
+  <div class="section-header">
+    <h2 class="section-title">Pilih Album Kamu</h2>
+    <div class="search-box">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Cari album atau nama event..." id="searchInput" oninput="filterAlbums(this.value)"/>
+    </div>
+  </div>
+
+  <div class="album-grid" id="albumGrid"></div>
+  <button class="btn-all" id="btnAll" style="display:none;" onclick="showAllAlbums()">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Lihat Semua Album
+  </button>
+</section>
+
+<!-- FEATURES -->
+<div class="features">
+  <div class="feature">
+    <div class="feature-icon">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    <h4>Privasi Terjaga</h4>
+    <p>Album hanya bisa diakses melalui link ini.</p>
+  </div>
+  <div class="feature-divider"></div>
+  <div class="feature">
+    <div class="feature-icon">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </div>
+    <h4>Mudah & Cepat</h4>
+    <p>Cari album kamu dan langsung akses Google Drive.</p>
+  </div>
+  <div class="feature-divider"></div>
+  <div class="feature">
+    <div class="feature-icon">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </div>
+    <h4>Kualitas Original</h4>
+    <p>Semua foto tersedia dalam kualitas terbaik.</p>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section class="section" id="about">
+  <p class="section-eyebrow">About</p>
+  <h2 class="section-title" style="margin-bottom: 48px;">Ramdhani Photo</h2>
+  <div class="about-grid" id="aboutGrid">
+    <div class="about-card">
+      <div class="about-icon">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>
+      </div>
+      <div>
+        <div class="about-label">Instagram</div>
+        <a id="igLink" href="#" target="_blank" class="about-value">@username_kamu</a>
+      </div>
+    </div>
+    <div class="about-card">
+      <div class="about-icon">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div>
+        <div class="about-label">Email</div>
+        <a id="emailLink" href="#" class="about-value">email_kamu@gmail.com</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  © 2026 Ramdhani Photo. All Rights Reserved.
+</footer>
+
+<script>
+  // ── SHARED DATA (same localStorage keys as admin.html) ──
+  const DEFAULT_ALBUMS = [
+    { id:1, name:'Graduation',     kategori:'Batch 2026',    tanggal:'Mei 2026',      foto:248, drive:'', thumb:'' },
+    { id:2, name:'House of Pats',  kategori:'Event',         tanggal:'22 Juni 2026',  foto:364, drive:'', thumb:'' },
+    { id:3, name:'Gathering',      kategori:'Event',         tanggal:'15 Mei 2026',   foto:188, drive:'', thumb:'' },
+    { id:4, name:'Portrait Studio',kategori:'Personal Shoot',tanggal:'April 2026',    foto:92,  drive:'', thumb:'' },
+  ];
+  const DEFAULT_SETTINGS = { ig:'@username_kamu', email:'email_kamu@gmail.com' };
+  const PREVIEW_LIMIT = 4;
+
+  let albums = JSON.parse(localStorage.getItem('rp_albums') || 'null') || DEFAULT_ALBUMS;
+  let settings = JSON.parse(localStorage.getItem('rp_settings') || 'null') || DEFAULT_SETTINGS;
+  let showAll = false;
+
+  // ── RENDER ALBUMS ──
+  const BG_COLORS = [
+    'linear-gradient(135deg,#1a2030,#0d0d0d)',
+    'linear-gradient(135deg,#1a1020,#0d0d0d)',
+    'linear-gradient(135deg,#0d1a15,#0d0d0d)',
+    'linear-gradient(135deg,#1a1510,#0d0d0d)',
+    'linear-gradient(135deg,#151515,#0d0d0d)',
+  ];
+
+  function driveIcon() {
+    return `<svg width="16" height="16" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg>`;
+  }
+
+  function renderAlbums(filterQ = '') {
+    const grid = document.getElementById('albumGrid');
+    const btnAll = document.getElementById('btnAll');
+    const q = filterQ.toLowerCase();
+    const filtered = albums.filter(a => a.name.toLowerCase().includes(q) || a.kategori.toLowerCase().includes(q) || a.tanggal.toLowerCase().includes(q));
+    const visible = (!showAll && !filterQ) ? filtered.slice(0, PREVIEW_LIMIT) : filtered;
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);">Tidak ada album yang ditemukan.</div>`;
+      btnAll.style.display = 'none';
+      return;
+    }
+
+    grid.innerHTML = visible.map((a, i) => {
+      const thumbStyle = a.thumb
+        ? `style="background:url('${a.thumb}') center/cover no-repeat;"`
+        : `style="background:${BG_COLORS[i % BG_COLORS.length]};"`;
+      const thumbInner = a.thumb ? '' : `<svg width="48" height="48" fill="none" stroke="#333" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+      const driveHref = a.drive || '#';
+      const driveTarget = a.drive ? 'target="_blank"' : '';
+      return `
+        <div class="album-card" data-name="${a.name.toLowerCase()}">
+          <div class="album-thumb">
+            <div class="thumb-placeholder" ${thumbStyle}>${thumbInner}</div>
+            <div class="photo-count">${Number(a.foto).toLocaleString('id')} Foto</div>
+          </div>
+          <div class="album-info">
+            <div class="album-name">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              ${a.name}
+            </div>
+            <div class="album-meta">
+              <span>${a.kategori}</span>
+              <span>${a.tanggal}</span>
+            </div>
+          </div>
+          <div class="album-footer">
+            <a href="${driveHref}" ${driveTarget} class="btn-drive">
+              ${driveIcon()} ${a.drive ? 'Buka Album' : 'Link Belum Tersedia'}
+            </a>
+          </div>
+        </div>`;
+    }).join('');
+
+    // show "Lihat Semua" only if there are more than PREVIEW_LIMIT and not filtering
+    if (!filterQ && !showAll && filtered.length > PREVIEW_LIMIT) {
+      btnAll.style.display = '';
+      btnAll.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Lihat Semua Album (${filtered.length})`;
+    } else {
+      btnAll.style.display = 'none';
+    }
+  }
+
+  function showAllAlbums() { showAll = true; renderAlbums(); }
+
+  function filterAlbums(q) { showAll = false; renderAlbums(q); }
+
+  // ── RENDER ABOUT / SETTINGS ──
+  function renderSettings() {
+    const ig = settings.ig || '@username_kamu';
+    const email = settings.email || 'email_kamu@gmail.com';
+    const igClean = ig.replace('@', '');
+    document.getElementById('igLink').textContent = ig;
+    document.getElementById('igLink').href = `https://instagram.com/${igClean}`;
+    document.getElementById('emailLink').textContent = email;
+    document.getElementById('emailLink').href = `mailto:${email}`;
+    // also update Follow Instagram btn
+    const igBtn = document.querySelector('.hero-btns .btn-outline');
+    if (igBtn) igBtn.href = `https://instagram.com/${igClean}`;
+  }
+
+  // ── NAV ACTIVE ──
+  const sections = [
+    { id: 'home', el: document.querySelector('.hero') },
+    { id: 'albums', el: document.getElementById('albums') },
+    { id: 'about', el: document.getElementById('about') },
+  ];
+  const navLinks = {
+    home: document.querySelector('.nav-links a[href="#"]'),
+    albums: document.querySelector('.nav-links a[href="#albums"]'),
+    about: document.querySelector('.nav-links a[href="#about"]'),
+  };
+  function setActive(id) {
+    Object.values(navLinks).forEach(a => { if (a) a.classList.remove('active'); });
+    if (navLinks[id]) navLinks[id].classList.add('active');
+  }
+  window.addEventListener('scroll', () => {
+    const scrollY = window.scrollY + 80;
+    let current = 'home';
+    sections.forEach(({ id, el }) => { if (el && el.offsetTop <= scrollY) current = id; });
+    setActive(current);
+  });
+
+  // ── SMOOTH SCROLL ──
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const href = a.getAttribute('href');
+      const target = href === '#' ? document.body : document.querySelector(href);
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  });
+
+  // ── INIT ──
+  renderAlbums();
+  renderSettings();
+
+  // Re-render if admin made changes in another tab
+  window.addEventListener('storage', () => {
+    albums = JSON.parse(localStorage.getItem('rp_albums') || 'null') || DEFAULT_ALBUMS;
+    settings = JSON.parse(localStorage.getItem('rp_settings') || 'null') || DEFAULT_SETTINGS;
+    renderAlbums();
+    renderSettings();
+  });
+</script>
+</body>
+</html>
