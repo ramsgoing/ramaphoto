@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin — Ramdhani Photo</title>
+  <title>Admin — Rams Gallery</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -232,10 +232,23 @@
         <div class="topbar"><div><h1>Pengaturan</h1><div class="topbar-sub">Kelola informasi kontak.</div></div></div>
         <div class="settings-grid">
           <div class="settings-card">
-            <h4>Informasi Kontak</h4>
+            <h4>Informasi Brand & Kontak</h4>
             <div class="field"><label>NAMA BRAND / WEBSITE</label><input type="text" id="settingBrand" placeholder="contoh: Rams Gallery"/></div>
             <div class="field"><label>USERNAME INSTAGRAM</label><input type="text" id="settingIG" placeholder="@username_kamu"/></div>
             <div class="field"><label>EMAIL</label><input type="email" id="settingEmail" placeholder="email_kamu@gmail.com"/></div>
+            <div class="field">
+              <label>HERO BACKGROUND (foto di halaman utama)</label>
+              <div class="thumb-upload" id="heroBgUploadArea">
+                <input type="file" accept="image/*" id="heroBgFileInput" onchange="handleHeroBgSelect(this)"/>
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span id="heroBgUploadLabel">Klik untuk upload foto background</span>
+                <img class="thumb-upload-preview" id="heroBgPreview"/>
+              </div>
+              <div class="upload-progress">
+                <div class="upload-bar-wrap" id="heroBgBarWrap"><div class="upload-bar" id="heroBgBar"></div></div>
+                <div class="upload-status" id="heroBgStatus"></div>
+              </div>
+            </div>
             <button class="btn-save-settings" onclick="saveSettings()">Simpan Perubahan</button>
           </div>
           <div class="settings-card">
@@ -372,6 +385,14 @@
         const brand = d.brand || 'Rams Gallery';
         document.getElementById('adminBrandName').textContent = brand;
         document.title = brand + ' — Admin';
+        currentHeroBgUrl = d.heroBgUrl || '';
+        if (d.heroBgUrl) {
+          const preview = document.getElementById('heroBgPreview');
+          preview.src = d.heroBgUrl;
+          preview.style.display = 'block';
+          document.getElementById('heroBgUploadLabel').style.display = 'none';
+          document.querySelector('#heroBgUploadArea svg').style.display = 'none';
+        }
       }
     });
   }
@@ -621,16 +642,74 @@
   };
 
   // ── SETTINGS ──
+  let selectedHeroBgFile = null;
+  let currentHeroBgUrl = '';
+
+  window.handleHeroBgSelect = (input) => {
+    if (!input.files[0]) return;
+    selectedHeroBgFile = input.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+      const preview = document.getElementById('heroBgPreview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      document.getElementById('heroBgUploadLabel').style.display = 'none';
+      document.querySelector('#heroBgUploadArea svg').style.display = 'none';
+    };
+    reader.readAsDataURL(selectedHeroBgFile);
+  };
+
   window.saveSettings = async () => {
+    const btn = document.querySelector('.btn-save-settings');
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
     try {
+      let heroBgUrl = currentHeroBgUrl;
+
+      if (selectedHeroBgFile) {
+        document.getElementById('heroBgBarWrap').style.display = 'block';
+        document.getElementById('heroBgStatus').style.display = 'block';
+        document.getElementById('heroBgStatus').textContent = 'Mengompresi gambar...';
+        const compressed = await compressImage(selectedHeroBgFile);
+        document.getElementById('heroBgStatus').textContent = 'Mengupload background...';
+        const fd = new FormData();
+        fd.append('file', compressed, 'hero-bg.jpg');
+        fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        fd.append('folder', 'rams-gallery');
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          const pct = Math.round(e.loaded/e.total*100);
+          document.getElementById('heroBgBar').style.width = pct + '%';
+          document.getElementById('heroBgStatus').textContent = `Mengupload... ${pct}%`;
+        };
+        heroBgUrl = await new Promise((res, rej) => {
+          xhr.onload = () => {
+            const r = JSON.parse(xhr.responseText);
+            if (r.secure_url) { document.getElementById('heroBgStatus').textContent = 'Upload selesai ✓'; res(r.secure_url); }
+            else rej(new Error(r.error?.message || 'Upload gagal'));
+          };
+          xhr.onerror = () => rej(new Error('Network error'));
+          xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
+          xhr.send(fd);
+        });
+        selectedHeroBgFile = null;
+        currentHeroBgUrl = heroBgUrl;
+      }
+
       await setDoc(doc(db, 'settings', 'main'), {
         brand: document.getElementById('settingBrand').value.trim(),
         ig: document.getElementById('settingIG').value.trim(),
         email: document.getElementById('settingEmail').value.trim(),
+        heroBgUrl,
       }, { merge: true });
       showToast('Pengaturan disimpan!', 'success');
     } catch(e) {
       showToast('Gagal menyimpan: ' + e.message, 'error');
+    } finally {
+      btn.textContent = 'Simpan Perubahan';
+      btn.disabled = false;
+      document.getElementById('heroBgBarWrap').style.display = 'none';
+      document.getElementById('heroBgStatus').style.display = 'none';
     }
   };
 

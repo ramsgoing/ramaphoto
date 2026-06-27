@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ramdhani Photo</title>
+  <title>Rams Gallery</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -15,7 +15,7 @@
     html { scroll-behavior: smooth; }
     body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.6; min-height: 100vh; }
 
-    /* NAV */
+    /* ── NAV ── */
     nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 64px; background: rgba(13,13,13,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
     .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; letter-spacing: 0.04em; color: var(--text); text-decoration: none; }
     .nav-logo svg { color: var(--gold); }
@@ -26,11 +26,12 @@
     .nav-links .nav-icon { color: var(--muted); cursor: pointer; transition: color .2s; }
     .nav-links .nav-icon:hover { color: var(--white); }
 
-    /* HERO */
+    /* ── HERO ── */
     .hero { position: relative; min-height: 100vh; display: flex; align-items: center; overflow: hidden; padding-top: 64px; }
     .hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0d0d0d 50%, #1a1410 100%); }
     .hero-img-wrap { position: absolute; right: 0; top: 0; bottom: 0; width: 55%; overflow: hidden; }
     .hero-img-wrap::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 60%; background: linear-gradient(to right, var(--bg), transparent); z-index: 1; }
+    #heroBgImg { width: 100%; height: 100%; object-fit: cover; opacity: 0.55; display: none; }
     .hero-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #1a1208 0%, #2a1f0a 40%, #0d0d0d 100%); display: flex; align-items: center; justify-content: center; opacity: 0.55; }
     .hero-placeholder svg { opacity: 0.15; }
     .hero-content { position: relative; z-index: 2; padding: 0 48px; max-width: 600px; }
@@ -45,7 +46,7 @@
     .btn-outline { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
     .btn-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
 
-    /* SECTION */
+    /* ── SECTION ── */
     .section { padding: 80px 48px; }
     .section-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
     .section-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 36px; }
@@ -55,7 +56,7 @@
     .search-box input::placeholder { color: var(--muted); }
     .search-box svg { color: var(--muted); flex-shrink: 0; }
 
-    /* ALBUM GRID */
+    /* ── ALBUM GRID (desktop) ── */
     .album-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
     .album-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: transform .22s, border-color .22s; cursor: pointer; }
     .album-card:hover { transform: translateY(-4px); border-color: var(--gold); }
@@ -74,7 +75,7 @@
     .btn-all { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; padding: 13px 28px; background: transparent; border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; transition: all .22s; width: fit-content; }
     .btn-all:hover { border-color: var(--gold); color: var(--gold); }
 
-    /* FEATURES */
+    /* ── FEATURES ── */
     .features { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; margin: 0 48px; padding: 36px 48px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
     .feature { display: flex; flex-direction: column; gap: 10px; }
     .feature-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--surface2); border-radius: 10px; color: var(--gold); }
@@ -82,7 +83,7 @@
     .feature p { font-size: 13px; color: var(--muted); line-height: 1.6; }
     .feature-divider { width: 1px; background: var(--border); }
 
-    /* ABOUT */
+    /* ── ABOUT ── */
     .about-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 600px; }
     .about-card { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; transition: border-color .2s; }
     .about-card:hover { border-color: var(--gold); }
@@ -91,14 +92,97 @@
     .about-value { font-size: 15px; font-weight: 600; color: var(--white); text-decoration: none; transition: color .2s; }
     .about-value:hover { color: var(--gold); }
 
-    /* LOADING */
+    /* ── LOADING ── */
     .loading-spinner { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 48px; color: var(--muted); font-size: 14px; grid-column: 1/-1; }
     .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     footer { text-align: center; padding: 28px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
 
-    @media (max-width: 900px) {
+    /* ── MOBILE VIEW: 2 halaman (Home & Albums) ── */
+    .mobile-section { display: none; }
+
+    @media (max-width: 768px) {
+      /* Sembunyikan semua section desktop */
+      .hero, .section, .features, footer { display: none !important; }
+      nav { display: none !important; }
+
+      /* Tampilkan mobile view */
+      .mobile-section { display: block; min-height: 100vh; background: var(--bg); }
+
+      /* Mobile Nav */
+      .m-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+      .m-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--text); }
+      .m-logo svg { color: var(--gold); }
+      .m-menu-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; }
+
+      /* Mobile pages */
+      .m-page { display: none; }
+      .m-page.active { display: block; }
+
+      /* Mobile Home */
+      .m-hero { position: relative; min-height: 55vw; overflow: hidden; }
+      .m-hero-bg { position: absolute; inset: 0; }
+      #mHeroBgImg { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; display: none; }
+      .m-hero-gradient { position: absolute; inset: 0; background: linear-gradient(135deg, #1a1208, #0d0d0d); }
+      .m-hero-content { position: relative; z-index: 1; padding: 28px 20px 24px; }
+      .m-eyebrow { font-size: 9px; font-weight: 600; letter-spacing: 0.14em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+      .m-title { font-family: 'Playfair Display', serif; font-size: clamp(28px, 8vw, 40px); line-height: 1.1; color: var(--white); margin-bottom: 10px; }
+      .m-title .accent { color: var(--gold); font-style: italic; }
+      .m-sub { font-size: 12px; color: #aaa; line-height: 1.6; margin-bottom: 20px; }
+      .m-btns { display: flex; flex-direction: column; gap: 10px; }
+      .m-btn-primary { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; background: var(--gold); color: #111; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; }
+      .m-btn-outline { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; background: transparent; color: var(--text); border: 1.5px solid var(--border); border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; text-decoration: none; }
+
+      /* Mobile Albums section (on home page) */
+      .m-albums-preview { padding: 24px 20px; }
+      .m-section-eyebrow { font-size: 9px; font-weight: 600; letter-spacing: 0.14em; color: var(--gold); text-transform: uppercase; margin-bottom: 4px; }
+      .m-section-title { font-size: 20px; font-weight: 700; color: var(--white); margin-bottom: 16px; }
+      .m-search { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; }
+      .m-search input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; }
+      .m-search input::placeholder { color: var(--muted); }
+      .m-search svg { color: var(--muted); flex-shrink: 0; }
+
+      /* Mobile album list rows */
+      .m-album-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+      .m-album-row:last-child { border-bottom: none; }
+      .m-album-thumb { width: 52px; height: 52px; border-radius: 10px; flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+      .m-album-thumb img { width: 100%; height: 100%; object-fit: cover; }
+      .m-album-info { flex: 1; min-width: 0; }
+      .m-album-name { font-weight: 600; font-size: 14px; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .m-album-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+      .m-album-arrow { color: var(--muted); flex-shrink: 0; }
+      .m-btn-all { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; background: transparent; border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 16px; }
+
+      /* Mobile album detail page */
+      .m-detail-back { display: flex; align-items: center; gap: 8px; padding: 16px 20px; color: var(--muted); font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+      .m-detail-content { padding: 20px; }
+      .m-detail-img { width: 100%; height: 200px; border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+      .m-detail-img img { width: 100%; height: 100%; object-fit: cover; }
+      .m-detail-img-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg,#1a2030,#0d0d0d); display: flex; align-items: center; justify-content: center; }
+      .m-detail-title { font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+      .m-detail-meta { font-size: 12px; color: var(--muted); display: flex; gap: 12px; margin-bottom: 6px; }
+      .m-detail-count { font-size: 16px; font-weight: 600; color: var(--white); margin-bottom: 20px; }
+      .m-detail-note { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 14px; line-height: 1.6; }
+      .m-btn-drive { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; background: var(--gold); color: #111; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; margin-bottom: 10px; }
+      .m-btn-back { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: transparent; border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; }
+
+      /* Mobile About (bottom of home) */
+      .m-about { padding: 24px 20px; border-top: 1px solid var(--border); }
+      .m-about-title { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 14px; }
+      .m-about-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+      .m-about-row:last-child { border-bottom: none; }
+      .m-about-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: var(--gold); flex-shrink: 0; }
+      .m-about-label { font-size: 10px; color: var(--muted); }
+      .m-about-value { font-size: 13px; font-weight: 600; color: var(--white); text-decoration: none; }
+      .m-footer { text-align: center; padding: 20px; color: var(--muted); font-size: 11px; border-top: 1px solid var(--border); }
+    }
+
+    /* ── DESKTOP RESPONSIVE ── */
+    @media (min-width: 769px) {
+      .mobile-section { display: none !important; }
+    }
+    @media (max-width: 900px) and (min-width: 769px) {
       nav { padding: 0 24px; }
       .section { padding: 60px 24px; }
       .album-grid { grid-template-columns: repeat(2, 1fr); }
@@ -107,15 +191,11 @@
       .hero-content { padding: 0 24px; }
       .about-grid { grid-template-columns: 1fr; }
     }
-    @media (max-width: 600px) {
-      .album-grid { grid-template-columns: 1fr; }
-      .section-header { flex-direction: column; }
-      .search-box { min-width: unset; width: 100%; }
-    }
   </style>
 </head>
 <body>
 
+<!-- ══ DESKTOP ══ -->
 <nav>
   <a href="#" class="nav-logo">
     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -136,7 +216,8 @@
 <section class="hero">
   <div class="hero-bg"></div>
   <div class="hero-img-wrap">
-    <div class="hero-placeholder">
+    <img id="heroBgImg" alt="Hero background"/>
+    <div class="hero-placeholder" id="heroPlaceholder">
       <svg width="160" height="160" fill="none" stroke="white" stroke-width="1" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
     </div>
   </div>
@@ -178,52 +259,129 @@
 <div class="features">
   <div class="feature">
     <div class="feature-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-    <h4>Privasi Terjaga</h4>
-    <p>Album hanya bisa diakses melalui link ini.</p>
+    <h4>Privasi Terjaga</h4><p>Album hanya bisa diakses melalui link ini.</p>
   </div>
   <div class="feature-divider"></div>
   <div class="feature">
     <div class="feature-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-    <h4>Mudah & Cepat</h4>
-    <p>Cari album kamu dan langsung akses Google Drive.</p>
+    <h4>Mudah & Cepat</h4><p>Cari album kamu dan langsung akses Google Drive.</p>
   </div>
   <div class="feature-divider"></div>
   <div class="feature">
     <div class="feature-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
-    <h4>Kualitas Original</h4>
-    <p>Semua foto tersedia dalam kualitas terbaik.</p>
+    <h4>Kualitas Original</h4><p>Semua foto tersedia dalam kualitas terbaik.</p>
   </div>
 </div>
 
 <section class="section" id="about">
   <p class="section-eyebrow">About</p>
-  <h2 class="section-title" style="margin-bottom:48px;">Ramdhani Photo</h2>
+  <h2 class="section-title" id="aboutTitle" style="margin-bottom:48px;">Rams Gallery</h2>
   <div class="about-grid">
     <div class="about-card">
       <div class="about-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg></div>
-      <div>
-        <div class="about-label">Instagram</div>
-        <a id="igLink" href="#" target="_blank" class="about-value">@username_kamu</a>
-      </div>
+      <div><div class="about-label">Instagram</div><a id="igLink" href="#" target="_blank" class="about-value">@username_kamu</a></div>
     </div>
     <div class="about-card">
       <div class="about-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-      <div>
-        <div class="about-label">Email</div>
-        <a id="emailLink" href="#" class="about-value">email_kamu@gmail.com</a>
-      </div>
+      <div><div class="about-label">Email</div><a id="emailLink" href="#" class="about-value">email_kamu@gmail.com</a></div>
     </div>
   </div>
 </section>
 
-<footer>© 2026 Ramdhani Photo. All Rights Reserved.</footer>
+<footer id="desktopFooter">© 2026 <span id="footerBrand">Rams Gallery</span>. All Rights Reserved.</footer>
 
-<!-- ✅ GANTI BAGIAN INI DENGAN FIREBASE CONFIG KAMU -->
+<!-- ══ MOBILE ══ -->
+<div class="mobile-section">
+  <!-- Mobile Nav -->
+  <div class="m-nav">
+    <div class="m-logo">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span id="mBrandName">Rams Gallery</span>
+    </div>
+    <button class="m-menu-btn" onclick="mGoHome()">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- Page: Home -->
+  <div class="m-page active" id="mPageHome">
+    <div class="m-hero">
+      <div class="m-hero-bg">
+        <div class="m-hero-gradient"></div>
+        <img id="mHeroBgImg" alt="Hero"/>
+      </div>
+      <div class="m-hero-content">
+        <div class="m-eyebrow">Find Your Moment</div>
+        <div class="m-title">Photos That Tell <span class="accent">Your</span> Story.</div>
+        <div class="m-sub">Setiap momen berharga layak untuk diabadikan. Temukan foto kamu di album yang tersedia.</div>
+        <div class="m-btns">
+          <a href="#" class="m-btn-primary" onclick="mShowAlbums(); return false;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M8 5V3h8v2"/></svg>
+            Lihat Album
+          </a>
+          <a href="#" class="m-btn-outline" id="mHeroIG">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>
+            Follow Instagram
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Albums preview on home -->
+    <div class="m-albums-preview">
+      <div class="m-section-eyebrow">Available Albums</div>
+      <div class="m-section-title">Pilih Album Kamu</div>
+      <div class="m-search">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="Cari album atau nama event..." id="mSearchInput" oninput="mFilterAlbums(this.value)"/>
+      </div>
+      <div id="mAlbumList"><div style="text-align:center;padding:24px;color:var(--muted)"><div class="spinner" style="margin:0 auto"></div></div></div>
+      <button class="m-btn-all" id="mBtnAll" style="display:none;" onclick="mShowAll()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Lihat Semua Album
+      </button>
+    </div>
+
+    <!-- About -->
+    <div class="m-about">
+      <div class="m-about-title" id="mAboutTitle">Rams Gallery</div>
+      <div class="m-about-row">
+        <div class="m-about-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg></div>
+        <div><div class="m-about-label">Instagram</div><a id="mIgLink" href="#" target="_blank" class="m-about-value">@username_kamu</a></div>
+      </div>
+      <div class="m-about-row">
+        <div class="m-about-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+        <div><div class="m-about-label">Email</div><a id="mEmailLink" href="#" class="m-about-value">email_kamu@gmail.com</a></div>
+      </div>
+    </div>
+    <div class="m-footer">© 2026 <span id="mFooterBrand">Rams Gallery</span>. All Rights Reserved.</div>
+  </div>
+
+  <!-- Page: Album Detail -->
+  <div class="m-page" id="mPageDetail">
+    <div class="m-detail-back" onclick="mGoHome()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Kembali ke Album
+    </div>
+    <div class="m-detail-content">
+      <div class="m-detail-img" id="mDetailImg"></div>
+      <div class="m-detail-title" id="mDetailTitle"></div>
+      <div class="m-detail-meta" id="mDetailMeta"></div>
+      <div class="m-detail-count" id="mDetailCount"></div>
+      <div class="m-detail-note">Klik tombol di bawah untuk membuka album di Google Drive</div>
+      <a href="#" class="m-btn-drive" id="mDetailDriveBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg>
+        Buka di Google Drive
+      </a>
+      <button class="m-btn-back" onclick="mGoHome()">← Kembali ke Album</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // 🔧 PASTE FIREBASE CONFIG KAMU DI SINI
   const firebaseConfig = {
     apiKey: "AIzaSyAgIIyi08oxaHMnqJHiSEDStxHNMTzZ5oo",
     authDomain: "ramsgallery-c82a3.firebaseapp.com",
@@ -238,86 +396,103 @@
   const db = getFirestore(app);
 
   const PREVIEW_LIMIT = 4;
-  const BG_COLORS = [
-    'linear-gradient(135deg,#1a2030,#0d0d0d)',
-    'linear-gradient(135deg,#1a1020,#0d0d0d)',
-    'linear-gradient(135deg,#0d1a15,#0d0d0d)',
-    'linear-gradient(135deg,#1a1510,#0d0d0d)',
-    'linear-gradient(135deg,#151515,#0d0d0d)',
-  ];
+  const BG_COLORS = ['linear-gradient(135deg,#1a2030,#0d0d0d)','linear-gradient(135deg,#1a1020,#0d0d0d)','linear-gradient(135deg,#0d1a15,#0d0d0d)','linear-gradient(135deg,#1a1510,#0d0d0d)','linear-gradient(135deg,#151515,#0d0d0d)'];
 
   let allAlbums = [];
   let showAll = false;
+  let mShowAllFlag = false;
   let currentQ = '';
+  let mCurrentQ = '';
 
   function driveIcon() {
     return `<svg width="16" height="16" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg>`;
   }
 
+  // ── DESKTOP RENDER ──
   function renderAlbums(filterQ = '') {
     currentQ = filterQ;
     const grid = document.getElementById('albumGrid');
     const btnAll = document.getElementById('btnAll');
     const q = filterQ.toLowerCase();
-    const filtered = allAlbums.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      (a.kategori||'').toLowerCase().includes(q) ||
-      (a.tanggal||'').toLowerCase().includes(q)
-    );
+    const filtered = allAlbums.filter(a => a.name.toLowerCase().includes(q) || (a.kategori||'').toLowerCase().includes(q) || (a.tanggal||'').toLowerCase().includes(q));
     const visible = (!showAll && !filterQ) ? filtered.slice(0, PREVIEW_LIMIT) : filtered;
-
-    if (filtered.length === 0) {
-      grid.innerHTML = `<div class="loading-spinner">Tidak ada album ditemukan.</div>`;
-      btnAll.style.display = 'none';
-      return;
-    }
-
-    grid.innerHTML = visible.map((a, i) => {
-      const thumbStyle = a.thumbUrl
-        ? `background:url('${a.thumbUrl}') center/cover no-repeat;`
-        : `background:${BG_COLORS[i % BG_COLORS.length]};`;
-      const thumbInner = a.thumbUrl ? '' : `<svg width="48" height="48" fill="none" stroke="#333" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
-      return `
-        <div class="album-card">
-          <div class="album-thumb">
-            <div class="thumb-placeholder" style="${thumbStyle}">${thumbInner}</div>
-            <div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div>
-          </div>
-          <div class="album-info">
-            <div class="album-name">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              ${a.name}
-            </div>
-            <div class="album-meta">
-              <span>${a.kategori||''}</span>
-              <span>${a.tanggal||''}</span>
-            </div>
-          </div>
-          <div class="album-footer">
-            <a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive">
-              ${driveIcon()} ${a.drive ? 'Buka Album' : 'Link Belum Tersedia'}
-            </a>
-          </div>
-        </div>`;
+    if (filtered.length === 0) { grid.innerHTML = `<div class="loading-spinner">Tidak ada album ditemukan.</div>`; btnAll.style.display='none'; return; }
+    grid.innerHTML = visible.map((a,i) => {
+      const ts = a.thumbUrl ? `background:url('${a.thumbUrl}') center/cover no-repeat;` : `background:${BG_COLORS[i%BG_COLORS.length]};`;
+      const ti = a.thumbUrl ? '' : `<svg width="48" height="48" fill="none" stroke="#333" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+      return `<div class="album-card"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div></div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div><div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer"><a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a></div></div>`;
     }).join('');
-
-    if (!filterQ && !showAll && filtered.length > PREVIEW_LIMIT) {
-      btnAll.style.display = '';
-      btnAll.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Lihat Semua Album (${filtered.length})`;
-    } else {
-      btnAll.style.display = 'none';
-    }
+    if (!filterQ && !showAll && filtered.length > PREVIEW_LIMIT) { btnAll.style.display=''; btnAll.innerHTML=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Lihat Semua Album (${filtered.length})`; }
+    else { btnAll.style.display='none'; }
   }
 
+  // ── MOBILE RENDER ──
+  function mRenderAlbums(filterQ = '') {
+    mCurrentQ = filterQ;
+    const q = filterQ.toLowerCase();
+    const filtered = allAlbums.filter(a => a.name.toLowerCase().includes(q) || (a.kategori||'').toLowerCase().includes(q) || (a.tanggal||'').toLowerCase().includes(q));
+    const visible = (!mShowAllFlag && !filterQ) ? filtered.slice(0, PREVIEW_LIMIT) : filtered;
+    const list = document.getElementById('mAlbumList');
+    if (filtered.length === 0) { list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);">Tidak ada album ditemukan.</div>`; document.getElementById('mBtnAll').style.display='none'; return; }
+    list.innerHTML = visible.map((a,i) => {
+      const ts = a.thumbUrl ? `background:url('${a.thumbUrl}') center/cover no-repeat;` : `background:${BG_COLORS[i%BG_COLORS.length]};`;
+      const ti = a.thumbUrl ? '' : `<svg width="22" height="22" fill="none" stroke="#444" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+      return `<div class="m-album-row" onclick="mOpenDetail('${a.id}')">
+        <div class="m-album-thumb" style="${ts}">${ti}</div>
+        <div class="m-album-info">
+          <div class="m-album-name">${a.name}</div>
+          <div class="m-album-meta">${a.tanggal||''} · ${Number(a.foto||0).toLocaleString('id')} Foto</div>
+        </div>
+        <svg class="m-album-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`;
+    }).join('');
+    const btnAll = document.getElementById('mBtnAll');
+    if (!filterQ && !mShowAllFlag && filtered.length > PREVIEW_LIMIT) { btnAll.style.display=''; btnAll.textContent=`Lihat Semua Album (${filtered.length})`; }
+    else { btnAll.style.display='none'; }
+  }
+
+  window.mOpenDetail = (id) => {
+    const a = allAlbums.find(x => x.id === id);
+    if (!a) return;
+    const imgEl = document.getElementById('mDetailImg');
+    imgEl.innerHTML = a.thumbUrl
+      ? `<img src="${a.thumbUrl}" alt="${a.name}" style="width:100%;height:100%;object-fit:cover;"/>`
+      : `<div class="m-detail-img-placeholder"><svg width="48" height="48" fill="none" stroke="#333" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
+    document.getElementById('mDetailTitle').textContent = a.name;
+    document.getElementById('mDetailMeta').innerHTML = `<span>📅 ${a.tanggal||'-'}</span><span>• ${a.kategori||'-'}</span>`;
+    document.getElementById('mDetailCount').textContent = `${Number(a.foto||0).toLocaleString('id')} Foto`;
+    const btn = document.getElementById('mDetailDriveBtn');
+    btn.href = a.drive || '#';
+    btn.style.opacity = a.drive ? '1' : '0.5';
+    btn.style.pointerEvents = a.drive ? '' : 'none';
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg> ${a.drive ? 'Buka di Google Drive' : 'Link Belum Tersedia'}`;
+    if (a.drive) btn.setAttribute('target','_blank'); else btn.removeAttribute('target');
+    document.getElementById('mPageHome').classList.remove('active');
+    document.getElementById('mPageDetail').classList.add('active');
+    window.scrollTo(0,0);
+  };
+
+  window.mGoHome = () => {
+    document.getElementById('mPageDetail').classList.remove('active');
+    document.getElementById('mPageHome').classList.add('active');
+    window.scrollTo(0,0);
+  };
+  window.mShowAlbums = () => { document.getElementById('mAlbumList').scrollIntoView({behavior:'smooth'}); };
+  window.mShowAll = () => { mShowAllFlag = true; mRenderAlbums(mCurrentQ); };
+  window.mFilterAlbums = (q) => { mShowAllFlag = false; mRenderAlbums(q); };
   window.showAllAlbums = () => { showAll = true; renderAlbums(currentQ); };
   window.filterAlbums = (q) => { showAll = false; renderAlbums(q); };
 
+  // ── SETTINGS ──
   function applySettings(data) {
     if (!data) return;
     const ig = data.ig || '@username_kamu';
     const email = data.email || 'email_kamu@gmail.com';
     const brand = data.brand || 'Rams Gallery';
+    const heroUrl = data.heroBgUrl || '';
     const igClean = ig.replace('@','');
+
+    // Desktop
     document.getElementById('igLink').textContent = ig;
     document.getElementById('igLink').href = `https://instagram.com/${igClean}`;
     document.getElementById('emailLink').textContent = email;
@@ -325,42 +500,53 @@
     document.getElementById('navIG').href = `https://instagram.com/${igClean}`;
     document.getElementById('heroIG').href = `https://instagram.com/${igClean}`;
     document.getElementById('brandName').textContent = brand;
+    document.getElementById('aboutTitle').textContent = brand;
+    document.getElementById('footerBrand').textContent = brand;
     document.title = brand;
+
+    // Hero bg desktop
+    const heroBgImg = document.getElementById('heroBgImg');
+    const heroPlaceholder = document.getElementById('heroPlaceholder');
+    if (heroUrl) { heroBgImg.src = heroUrl; heroBgImg.style.display = 'block'; heroPlaceholder.style.display = 'none'; }
+    else { heroBgImg.style.display = 'none'; heroPlaceholder.style.display = 'flex'; }
+
+    // Mobile
+    document.getElementById('mBrandName').textContent = brand;
+    document.getElementById('mAboutTitle').textContent = brand;
+    document.getElementById('mFooterBrand').textContent = brand;
+    document.getElementById('mIgLink').textContent = ig;
+    document.getElementById('mIgLink').href = `https://instagram.com/${igClean}`;
+    document.getElementById('mEmailLink').textContent = email;
+    document.getElementById('mEmailLink').href = `mailto:${email}`;
+    document.getElementById('mHeroIG').href = `https://instagram.com/${igClean}`;
+
+    // Hero bg mobile
+    const mHeroBgImg = document.getElementById('mHeroBgImg');
+    const mGradient = document.querySelector('.m-hero-gradient');
+    if (heroUrl) { mHeroBgImg.src = heroUrl; mHeroBgImg.style.display = 'block'; mGradient.style.opacity = '0.6'; }
+    else { mHeroBgImg.style.display = 'none'; mGradient.style.opacity = '1'; }
   }
 
-  // ── REALTIME LISTENERS ──
-  // Albums: realtime
+  // ── FIRESTORE LISTENERS ──
   onSnapshot(collection(db, 'albums'), (snap) => {
-    allAlbums = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+    allAlbums = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
     renderAlbums(currentQ);
+    mRenderAlbums(mCurrentQ);
   });
 
-  // Settings: realtime
   onSnapshot(doc(db, 'settings', 'main'), (snap) => {
     if (snap.exists()) applySettings(snap.data());
   });
 
-  // NAV ACTIVE
-  const navSections = [
-    { id: 'home', el: document.querySelector('.hero') },
-    { id: 'albums', el: document.getElementById('albums') },
-    { id: 'about', el: document.getElementById('about') },
-  ];
-  const navMap = {
-    home: document.getElementById('navHome'),
-    albums: document.getElementById('navAlbums'),
-    about: document.getElementById('navAbout'),
-  };
+  // ── NAV ACTIVE (desktop) ──
+  const navSections = [{ id:'home', el:document.querySelector('.hero') },{ id:'albums', el:document.getElementById('albums') },{ id:'about', el:document.getElementById('about') }];
+  const navMap = { home: document.getElementById('navHome'), albums: document.getElementById('navAlbums'), about: document.getElementById('navAbout') };
   window.addEventListener('scroll', () => {
-    const y = window.scrollY + 80;
-    let cur = 'home';
+    const y = window.scrollY + 80; let cur = 'home';
     navSections.forEach(({ id, el }) => { if (el && el.offsetTop <= y) cur = id; });
     Object.values(navMap).forEach(a => { if(a) a.classList.remove('active'); });
     if (navMap[cur]) navMap[cur].classList.add('active');
   });
-
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
       const href = a.getAttribute('href');
