@@ -434,7 +434,9 @@
 
   // ── ALBUM TABLE ──
   function renderAlbumTable() {
-    const rows = allAlbums.map(a => albumRow(a, false)).join('');
+    const rows = allAlbums.map((a, i) => albumRow(a, false, i)).join('');
+    // Remove old drag hint if exists
+    document.querySelector('.drag-hint')?.remove();
     document.getElementById('albumTable').innerHTML = `
       <thead><tr><th style="width:32px;"></th><th>Album</th><th>Kategori</th><th>Tanggal</th><th>Foto</th><th>Drive</th><th>Aksi</th></tr></thead>
       <tbody id="albumTbody">${rows||'<tr><td colspan="7" class="tbl-loading">Belum ada album.</td></tr>'}</tbody>`;
