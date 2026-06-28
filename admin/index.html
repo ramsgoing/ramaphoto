@@ -380,14 +380,27 @@
 
   window.doLogout = () => signOut(auth);
 
+  let isDragging = false;
+  let pendingRender = false;
+
   // ── REALTIME LISTENERS ──
   function startListeners() {
     unsubAlbums = onSnapshot(collection(db, 'albums'), snap => {
       allAlbums = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-      renderDashboard();
-      renderAlbumTable();
+        .sort((a,b) => {
+          // Sort by order field first, fallback to createdAt
+          const oa = a.order !== undefined ? a.order : 99999;
+          const ob = b.order !== undefined ? b.order : 99999;
+          if (oa !== ob) return oa - ob;
+          return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
+        });
+      if (isDragging) {
+        pendingRender = true; // defer until drag ends
+      } else {
+        renderDashboard();
+        renderAlbumTable();
+      }
     });
     unsubSettings = onSnapshot(doc(db, 'settings', 'main'), snap => {
       if (snap.exists()) {
@@ -810,6 +823,7 @@
       // MOUSE
       handle.addEventListener('mousedown', (e) => {
         e.preventDefault();
+        isDragging = true;
         draggingRow = row;
         row.style.opacity = '0.3';
         createGhost(row, e.clientY);
@@ -817,6 +831,7 @@
 
       // TOUCH
       handle.addEventListener('touchstart', (e) => {
+        isDragging = true;
         draggingRow = row;
         row.style.opacity = '0.3';
         createGhost(row, e.touches[0].clientY);
@@ -834,7 +849,12 @@
         lastOver = over;
       }
     });
-    document.addEventListener('mouseup', (e) => { if (draggingRow) finishDrop(e.clientY); });
+    document.addEventListener('mouseup', (e) => {
+      if (draggingRow) finishDrop(e.clientY).then(() => {
+        isDragging = false;
+        if (pendingRender) { pendingRender = false; renderDashboard(); renderAlbumTable(); }
+      });
+    });
 
     // Touch move/end
     document.addEventListener('touchmove', (e) => {
@@ -849,7 +869,10 @@
       }
     }, { passive: true });
     document.addEventListener('touchend', (e) => {
-      if (draggingRow) finishDrop(e.changedTouches[0].clientY);
+      if (draggingRow) finishDrop(e.changedTouches[0].clientY).then(() => {
+        isDragging = false;
+        if (pendingRender) { pendingRender = false; renderDashboard(); renderAlbumTable(); }
+      });
     });
   }
 
