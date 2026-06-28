@@ -742,70 +742,115 @@
   function initDragDrop() {
     const tbody = document.getElementById('albumTbody');
     if (!tbody) return;
+
     let draggingRow = null;
+    let ghost = null;
+    let offsetY = 0;
+    let lastOver = null;
 
-    tbody.querySelectorAll('tr[data-id]').forEach(row => {
-      const handle = row.querySelector('.drag-handle');
-      if (!handle) return;
+    function createGhost(row, clientY) {
+      ghost = row.cloneNode(true);
+      ghost.style.cssText = `
+        position:fixed; z-index:9999; left:0; right:0;
+        background:var(--surface2); border:1px solid var(--gold);
+        border-radius:8px; opacity:0.95; pointer-events:none;
+        box-shadow:0 8px 32px rgba(0,0,0,0.5);
+        transition:none;
+      `;
+      const rect = row.getBoundingClientRect();
+      ghost.style.top = rect.top + 'px';
+      ghost.style.width = rect.width + 'px';
+      offsetY = clientY - rect.top;
+      document.body.appendChild(ghost);
+    }
 
-      // Mouse
-      handle.addEventListener('mousedown', (e) => {
-        draggingRow = row;
-        row.classList.add('album-row-dragging');
-        e.preventDefault();
-      });
+    function moveGhost(clientY) {
+      if (!ghost) return;
+      ghost.style.top = (clientY - offsetY) + 'px';
+    }
 
-      // Touch
-      handle.addEventListener('touchstart', (e) => {
-        draggingRow = row;
-        row.classList.add('album-row-dragging');
-      }, { passive: true });
-    });
-
-    tbody.addEventListener('mouseover', (e) => {
-      if (!draggingRow) return;
-      const over = e.target.closest('tr[data-id]');
-      if (over && over !== draggingRow) {
-        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('album-row-over'));
-        over.classList.add('album-row-over');
+    function getRowAt(clientY) {
+      const rows = [...tbody.querySelectorAll('tr[data-id]')].filter(r => r !== draggingRow);
+      for (const r of rows) {
+        const rect = r.getBoundingClientRect();
+        if (clientY >= rect.top && clientY <= rect.bottom) return r;
       }
-    });
+      return null;
+    }
 
-    tbody.addEventListener('touchmove', (e) => {
-      if (!draggingRow) return;
-      const touch = e.touches[0];
-      const el = document.elementFromPoint(touch.clientX, touch.clientY);
-      const over = el?.closest('tr[data-id]');
-      if (over && over !== draggingRow) {
-        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('album-row-over'));
-        over.classList.add('album-row-over');
-      }
-    }, { passive: true });
-
-    const drop = async (e) => {
-      if (!draggingRow) return;
-      const overRow = tbody.querySelector('.album-row-over');
-      draggingRow.classList.remove('album-row-dragging');
+    function clearHighlight() {
       tbody.querySelectorAll('tr').forEach(r => r.classList.remove('album-row-over'));
+    }
+
+    async function finishDrop(clientY) {
+      if (!draggingRow) return;
+      const overRow = getRowAt(clientY);
+      if (ghost) { ghost.remove(); ghost = null; }
+      draggingRow.style.opacity = '';
+      clearHighlight();
 
       if (overRow && overRow !== draggingRow) {
         const rows = [...tbody.querySelectorAll('tr[data-id]')];
         const fromIdx = rows.indexOf(draggingRow);
         const toIdx = rows.indexOf(overRow);
-        // Reorder in DOM
         if (fromIdx < toIdx) tbody.insertBefore(draggingRow, overRow.nextSibling);
         else tbody.insertBefore(draggingRow, overRow);
-
-        // Save new order to Firestore
         const newOrder = [...tbody.querySelectorAll('tr[data-id]')].map((r, i) => ({ id: r.dataset.id, order: i }));
         await saveOrder(newOrder);
         showToast('Urutan album disimpan!', 'success');
       }
       draggingRow = null;
-    };
+      lastOver = null;
+    }
 
-    document.addEventListener('mouseup', drop);
-    document.addEventListener('touchend', drop);
+    tbody.querySelectorAll('tr[data-id]').forEach(row => {
+      const handle = row.querySelector('.drag-handle');
+      if (!handle) return;
+
+      // MOUSE
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        draggingRow = row;
+        row.style.opacity = '0.3';
+        createGhost(row, e.clientY);
+      });
+
+      // TOUCH
+      handle.addEventListener('touchstart', (e) => {
+        draggingRow = row;
+        row.style.opacity = '0.3';
+        createGhost(row, e.touches[0].clientY);
+      }, { passive: true });
+    });
+
+    // Mouse move/up
+    document.addEventListener('mousemove', (e) => {
+      if (!draggingRow) return;
+      moveGhost(e.clientY);
+      const over = getRowAt(e.clientY);
+      if (over !== lastOver) {
+        clearHighlight();
+        if (over && over !== draggingRow) over.classList.add('album-row-over');
+        lastOver = over;
+      }
+    });
+    document.addEventListener('mouseup', (e) => { if (draggingRow) finishDrop(e.clientY); });
+
+    // Touch move/end
+    document.addEventListener('touchmove', (e) => {
+      if (!draggingRow) return;
+      const t = e.touches[0];
+      moveGhost(t.clientY);
+      const over = getRowAt(t.clientY);
+      if (over !== lastOver) {
+        clearHighlight();
+        if (over && over !== draggingRow) over.classList.add('album-row-over');
+        lastOver = over;
+      }
+    }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      if (draggingRow) finishDrop(e.changedTouches[0].clientY);
+    });
   }
 
   async function saveOrder(orderArr) {
