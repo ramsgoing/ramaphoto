@@ -75,14 +75,6 @@
     .btn-all { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; padding: 13px 28px; background: transparent; border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; transition: all .22s; width: fit-content; }
     .btn-all:hover { border-color: var(--gold); color: var(--gold); }
 
-    /* ── FEATURES ── */
-    .features { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; margin: 0 48px; padding: 36px 48px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
-    .feature { display: flex; flex-direction: column; gap: 10px; }
-    .feature-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--surface2); border-radius: 10px; color: var(--gold); }
-    .feature h4 { font-size: 14px; font-weight: 600; color: var(--white); }
-    .feature p { font-size: 13px; color: var(--muted); line-height: 1.6; }
-    .feature-divider { width: 1px; background: var(--border); }
-
     /* ── ABOUT ── */
     .about-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 600px; }
     .about-card { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; transition: border-color .2s; }
@@ -111,10 +103,27 @@
       .mobile-section { display: block; min-height: 100vh; background: var(--bg); }
 
       /* Mobile Nav */
-      .m-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+      .m-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; background: rgba(13,13,13,0.95); backdrop-filter: blur(12px); }
       .m-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--text); }
       .m-logo svg { color: var(--gold); }
       .m-menu-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; }
+
+      /* Mobile Drawer */
+      .m-drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 98; opacity: 0; pointer-events: none; transition: opacity .25s; }
+      .m-drawer-overlay.open { opacity: 1; pointer-events: all; }
+      .m-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 72vw; max-width: 280px; background: var(--surface); border-left: 1px solid var(--border); z-index: 99; transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1); padding: 0; display: flex; flex-direction: column; }
+      .m-drawer.open { transform: translateX(0); }
+      .m-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+      .m-drawer-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--text); }
+      .m-drawer-logo svg { color: var(--gold); }
+      .m-drawer-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 22px; line-height: 1; }
+      .m-drawer-nav { padding: 12px 0; flex: 1; }
+      .m-drawer-link { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: var(--muted); font-size: 15px; font-weight: 500; text-decoration: none; cursor: pointer; transition: all .18s; border: none; background: none; width: 100%; text-align: left; }
+      .m-drawer-link:hover, .m-drawer-link.active { color: var(--gold); background: rgba(201,168,76,0.08); }
+      .m-drawer-link svg { flex-shrink: 0; }
+      .m-drawer-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+      .m-drawer-ig { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: var(--muted); font-size: 14px; text-decoration: none; border-top: 1px solid var(--border); margin-top: auto; }
+      .m-drawer-ig:hover { color: var(--gold); }
 
       /* Mobile pages */
       .m-page { display: none; }
@@ -256,23 +265,6 @@
   </button>
 </section>
 
-<!-- <div class="features">
-  <div class="feature">
-    <div class="feature-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-    <h4>Privasi Terjaga</h4><p>Album hanya bisa diakses melalui link ini.</p>
-  </div>
-  <div class="feature-divider"></div>
-  <div class="feature">
-    <div class="feature-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-    <h4>Mudah & Cepat</h4><p>Cari album kamu dan langsung akses Google Drive.</p>
-  </div>
-  <div class="feature-divider"></div>
-  <div class="feature">
-    <div class="feature-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
-    <h4>Kualitas Original</h4><p>Semua foto tersedia dalam kualitas terbaik.</p>
-  </div>
-</div> -->
-
 <section class="section" id="about">
   <p class="section-eyebrow">About</p>
   <h2 class="section-title" id="aboutTitle" style="margin-bottom:48px;">Rams Gallery</h2>
@@ -298,9 +290,42 @@
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       <span id="mBrandName">Rams Gallery</span>
     </div>
-    <button class="m-menu-btn" onclick="mGoHome()">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <button class="m-menu-btn" onclick="mOpenDrawer()" aria-label="Menu">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
+  </div>
+
+  <!-- Drawer Overlay -->
+  <div class="m-drawer-overlay" id="mDrawerOverlay" onclick="mCloseDrawer()"></div>
+
+  <!-- Drawer -->
+  <div class="m-drawer" id="mDrawer">
+    <div class="m-drawer-header">
+      <div class="m-drawer-logo">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span id="mDrawerBrand">Rams Gallery</span>
+      </div>
+      <button class="m-drawer-close" onclick="mCloseDrawer()">×</button>
+    </div>
+    <div class="m-drawer-nav">
+      <button class="m-drawer-link active" id="drawerHome" onclick="mDrawerGo('home')">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </button>
+      <button class="m-drawer-link" id="drawerAlbums" onclick="mDrawerGo('albums')">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M8 5V3h8v2"/></svg>
+        Albums
+      </button>
+      <button class="m-drawer-link" id="drawerAbout" onclick="mDrawerGo('about')">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        About
+      </button>
+      <div class="m-drawer-divider"></div>
+    </div>
+    <a href="#" class="m-drawer-ig" id="mDrawerIG" target="_blank">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>
+      <span id="mDrawerIGText">@username_kamu</span>
+    </a>
   </div>
 
   <!-- Page: Home -->
@@ -472,6 +497,32 @@
     window.scrollTo(0,0);
   };
 
+  // ── MOBILE DRAWER ──
+  window.mOpenDrawer = () => {
+    document.getElementById('mDrawer').classList.add('open');
+    document.getElementById('mDrawerOverlay').classList.add('open');
+  };
+  window.mCloseDrawer = () => {
+    document.getElementById('mDrawer').classList.remove('open');
+    document.getElementById('mDrawerOverlay').classList.remove('open');
+  };
+  window.mDrawerGo = (section) => {
+    mCloseDrawer();
+    // update active state
+    ['drawerHome','drawerAlbums','drawerAbout'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+    if (section === 'home') {
+      document.getElementById('drawerHome').classList.add('active');
+      mGoHome();
+    } else if (section === 'albums') {
+      document.getElementById('drawerAlbums').classList.add('active');
+      mGoHome();
+      setTimeout(() => document.getElementById('mAlbumList')?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } else if (section === 'about') {
+      document.getElementById('drawerAbout').classList.add('active');
+      mGoHome();
+      setTimeout(() => document.querySelector('.m-about')?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+  };
   window.mGoHome = () => {
     document.getElementById('mPageDetail').classList.remove('active');
     document.getElementById('mPageHome').classList.add('active');
@@ -510,8 +561,10 @@
     if (heroUrl) { heroBgImg.src = heroUrl; heroBgImg.style.display = 'block'; heroPlaceholder.style.display = 'none'; }
     else { heroBgImg.style.display = 'none'; heroPlaceholder.style.display = 'flex'; }
 
-    // Mobile
-    document.getElementById('mBrandName').textContent = brand;
+    // Drawer
+    document.getElementById('mDrawerBrand').textContent = brand;
+    document.getElementById('mDrawerIG').href = `https://instagram.com/${igClean}`;
+    document.getElementById('mDrawerIGText').textContent = ig;
     document.getElementById('mAboutTitle').textContent = brand;
     document.getElementById('mFooterBrand').textContent = brand;
     document.getElementById('mIgLink').textContent = ig;
@@ -529,7 +582,14 @@
 
   // ── FIRESTORE LISTENERS ──
   onSnapshot(collection(db, 'albums'), (snap) => {
-    allAlbums = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    allAlbums = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => {
+        // sort by order field first, fallback to createdAt
+        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+        if (a.order !== undefined) return -1;
+        if (b.order !== undefined) return 1;
+        return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
+      });
     renderAlbums(currentQ);
     mRenderAlbums(mCurrentQ);
   });
