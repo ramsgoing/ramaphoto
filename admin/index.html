@@ -453,13 +453,14 @@
   function renderDashboard() {
     const totalFoto = allAlbums.reduce((s,a) => s + Number(a.foto||0), 0);
     const withDrive = allAlbums.filter(a => a.drive).length;
+    const totalClicks = allAlbums.reduce((s,a) => s + Number(a.clicks||0), 0);
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-card"><div class="stat-label">Total Album</div><div class="stat-value">${allAlbums.length}<span>album</span></div></div>
       <div class="stat-card"><div class="stat-label">Total Foto</div><div class="stat-value">${totalFoto.toLocaleString('id')}<span>foto</span></div></div>
-      <div class="stat-card"><div class="stat-label">Link Drive Aktif</div><div class="stat-value">${withDrive}<span>album</span></div></div>
+      <div class="stat-card"><div class="stat-label">Total Klik Drive</div><div class="stat-value">${totalClicks.toLocaleString('id')}<span>klik</span></div></div>
       <div class="stat-card"><div class="stat-label">Belum Ada Link</div><div class="stat-value">${allAlbums.length - withDrive}<span>album</span></div></div>`;
-    const rows = allAlbums.slice(0,5).map(a => albumRow(a, true)).join('');
-    document.getElementById('dashTable').innerHTML = `<thead><tr><th>Album</th><th>Tanggal</th><th>Foto</th><th>Drive</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="tbl-loading">Belum ada album.</td></tr>'}</tbody>`;
+    const rows = allAlbums.slice(0,5).map(a => albumRow(a, true, 0)).join('');
+    document.getElementById('dashTable').innerHTML = `<thead><tr><th>Album</th><th>Tanggal</th><th>Foto</th><th>Klik</th><th>Aktif</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="tbl-loading">Belum ada album.</td></tr>'}</tbody>`;
   }
 
   // ── ALBUM TABLE ──
@@ -517,13 +518,16 @@
       </div>
     </td>`;
     const d = daysLeft(a.createdAt);
-    const ttlCell = minimal ? '' : (() => {
-      if (d === null) return `<td><span class="no-link">-</span></td>`;
-      if (d <= 0) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">Kadaluarsa</span></td>`;
-      if (d <= 3) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">⚠️ ${d} hari lagi</span></td>`;
-      if (d <= 7) return `<td><span class="badge" style="background:rgba(255,165,0,0.15);color:orange;">${d} hari lagi</span></td>`;
-      return `<td><span class="badge badge-graduation">${d} hari lagi</span></td>`;
-    })();
+    const ttlCell = minimal
+      ? `<td><span class="badge ${d===null?'':d<=3?'':'badge-graduation'}" style="${d!==null&&d<=3?'background:rgba(224,82,82,0.15);color:#e05252;':d!==null&&d<=7?'background:rgba(255,165,0,0.15);color:orange;':''}">${d===null?'-':d<=0?'Kadaluarsa':d+' hari'}</span></td>`
+      : (() => {
+        if (d === null) return `<td><span class="no-link">-</span></td>`;
+        if (d <= 0) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">Kadaluarsa</span></td>`;
+        if (d <= 3) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">⚠️ ${d} hari lagi</span></td>`;
+        if (d <= 7) return `<td><span class="badge" style="background:rgba(255,165,0,0.15);color:orange;">${d} hari lagi</span></td>`;
+        return `<td><span class="badge badge-graduation">${d} hari lagi</span></td>`;
+      })();
+    const clicksCell = `<td style="font-weight:600;color:var(--gold);">${Number(a.clicks||0).toLocaleString('id')} <span style="color:var(--muted);font-weight:400;font-size:11px;">klik</span></td>`;
     const actions = minimal ? '' : `<td><div class="action-btns">
       <button class="btn-icon" onclick="openModal('${a.id}')" title="Edit"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
       <button class="btn-icon del" onclick="askDelete('${a.id}','${a.thumbPath||''}')" title="Hapus"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
@@ -534,8 +538,9 @@
       ${minimal ? '' : `<td><span class="badge ${badgeClass(a.kategori||'')}">${a.kategori||'-'}</span></td>`}
       <td style="color:var(--muted);font-size:13px;">${a.tanggal||'-'}</td>
       <td style="font-weight:600;">${Number(a.foto||0).toLocaleString('id')}</td>
+      ${clicksCell}
       ${ttlCell}
-      <td>${driveCell}</td>
+      ${minimal ? '' : `<td>${driveCell}</td>`}
       ${actions}
     </tr>`;
   }
