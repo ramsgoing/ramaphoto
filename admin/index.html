@@ -380,8 +380,30 @@
 
   window.doLogout = () => signOut(auth);
 
-  let isDragging = false;
-  let pendingRender = false;
+  window.moveAlbum = async (id, dir) => {
+    const idx = allAlbums.findIndex(a => a.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= allAlbums.length) return;
+
+    // Swap in local array
+    [allAlbums[idx], allAlbums[newIdx]] = [allAlbums[newIdx], allAlbums[idx]];
+
+    // Re-render immediately (optimistic)
+    renderAlbumTable();
+
+    // Save new order to Firestore
+    try {
+      const { writeBatch, doc: fsDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      const batch = writeBatch(db);
+      allAlbums.forEach((a, i) => {
+        batch.update(fsDoc(db, 'albums', a.id), { order: i });
+      });
+      await batch.commit();
+      showToast('Urutan disimpan!', 'success');
+    } catch(e) {
+      showToast('Gagal menyimpan: ' + e.message, 'error');
+    }
+  };
 
   // ── REALTIME LISTENERS ──
   function startListeners() {
@@ -389,18 +411,13 @@
       allAlbums = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .sort((a,b) => {
-          // Sort by order field first, fallback to createdAt
           const oa = a.order !== undefined ? a.order : 99999;
           const ob = b.order !== undefined ? b.order : 99999;
           if (oa !== ob) return oa - ob;
           return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
         });
-      if (isDragging) {
-        pendingRender = true; // defer until drag ends
-      } else {
-        renderDashboard();
-        renderAlbumTable();
-      }
+      renderDashboard();
+      renderAlbumTable();
     });
     unsubSettings = onSnapshot(doc(db, 'settings', 'main'), snap => {
       if (snap.exists()) {
@@ -447,38 +464,77 @@
 
   // ── ALBUM TABLE ──
   function renderAlbumTable() {
-    const rows = allAlbums.map((a, i) => albumRow(a, false, i)).join('');
-    // Remove old drag hint if exists
     document.querySelector('.drag-hint')?.remove();
+    const rows = allAlbums.map((a, i) => albumRow(a, false, i)).join('');
     document.getElementById('albumTable').innerHTML = `
-      <thead><tr><th style="width:32px;"></th><th>Album</th><th>Kategori</th><th>Tanggal</th><th>Foto</th><th>Drive</th><th>Aksi</th></tr></thead>
-      <tbody id="albumTbody">${rows||'<tr><td colspan="7" class="tbl-loading">Belum ada album.</td></tr>'}</tbody>`;
-    if (allAlbums.length > 1) {
-      document.getElementById('albumTable').insertAdjacentHTML('beforebegin', `<div class="drag-hint"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1" fill="currentColor"/><circle cx="15" cy="5" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="19" r="1" fill="currentColor"/></svg> Drag baris untuk ubah urutan tampil di website</div>`);
-    }
-    initDragDrop();
+      <thead><tr><th style="width:64px;">Urutan</th><th>Album</th><th>Kategori</th><th>Tanggal</th><th>Foto</th><th>Aktif</th><th>Drive</th><th>Aksi</th></tr></thead>
+      <tbody id="albumTbody">${rows||'<tr><td colspan="8" class="tbl-loading">Belum ada album.</td></tr>'}</tbody>`;
+    autoDeleteExpired();
   }
 
-  function albumRow(a, minimal) {
+  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+  function daysLeft(createdAt) {
+    if (!createdAt?.seconds) return null;
+    const created = createdAt.seconds * 1000;
+    const expires = created + TWO_WEEKS_MS;
+    const diff = expires - Date.now();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }
+
+  async function autoDeleteExpired() {
+    const expired = allAlbums.filter(a => {
+      const d = daysLeft(a.createdAt);
+      return d !== null && d <= 0;
+    });
+    for (const a of expired) {
+      try {
+        await deleteDoc(doc(db, 'albums', a.id));
+        if (a.thumbPath) {
+          try { await deleteObject(ref(storage, a.thumbPath)); } catch(_) {}
+        }
+        console.log('Auto-deleted expired album:', a.name);
+      } catch(e) { console.error(e); }
+    }
+  }
+
+  function albumRow(a, minimal, idx) {
     const thumb = a.thumbUrl
       ? `<div class="album-thumb-sm"><img src="${a.thumbUrl}" loading="lazy"/></div>`
       : `<div class="album-thumb-sm"><svg width="18" height="18" fill="none" stroke="#444" stroke-width="1.5" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
     const driveCell = a.drive
       ? `<a href="${a.drive}" target="_blank" class="drive-link"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg>${a.drive.replace('https://','').substring(0,28)}…</a>`
       : `<span class="no-link">Belum ada link</span>`;
-    const dragHandle = minimal ? '' : `<td><div class="drag-handle" title="Drag untuk reorder">
-      <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5" fill="currentColor"/><circle cx="15" cy="5" r="1.5" fill="currentColor"/><circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/><circle cx="9" cy="19" r="1.5" fill="currentColor"/><circle cx="15" cy="19" r="1.5" fill="currentColor"/></svg>
-    </div></td>`;
+    const orderBtns = minimal ? '' : `<td>
+      <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
+        <button class="btn-icon" onclick="moveAlbum('${a.id}',-1)" title="Naik" ${idx===0?'disabled style="opacity:0.3"':''}>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <span style="font-size:10px;color:var(--muted);font-weight:600;">${(idx+1)}</span>
+        <button class="btn-icon" onclick="moveAlbum('${a.id}',1)" title="Turun" ${idx===allAlbums.length-1?'disabled style="opacity:0.3"':''}>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+    </td>`;
+    const d = daysLeft(a.createdAt);
+    const ttlCell = minimal ? '' : (() => {
+      if (d === null) return `<td><span class="no-link">-</span></td>`;
+      if (d <= 0) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">Kadaluarsa</span></td>`;
+      if (d <= 3) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">⚠️ ${d} hari lagi</span></td>`;
+      if (d <= 7) return `<td><span class="badge" style="background:rgba(255,165,0,0.15);color:orange;">${d} hari lagi</span></td>`;
+      return `<td><span class="badge badge-graduation">${d} hari lagi</span></td>`;
+    })();
     const actions = minimal ? '' : `<td><div class="action-btns">
       <button class="btn-icon" onclick="openModal('${a.id}')" title="Edit"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
       <button class="btn-icon del" onclick="askDelete('${a.id}','${a.thumbPath||''}')" title="Hapus"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
     </div></td>`;
     return `<tr data-id="${a.id}">
-      ${dragHandle}
+      ${orderBtns}
       <td><div class="album-name-cell">${thumb}<div><div class="album-name-text">${a.name}</div><div class="album-sub-text">${a.foto||0} Foto</div></div></div></td>
       ${minimal ? '' : `<td><span class="badge ${badgeClass(a.kategori||'')}">${a.kategori||'-'}</span></td>`}
       <td style="color:var(--muted);font-size:13px;">${a.tanggal||'-'}</td>
       <td style="font-weight:600;">${Number(a.foto||0).toLocaleString('id')}</td>
+      ${ttlCell}
       <td>${driveCell}</td>
       ${actions}
     </tr>`;
@@ -752,145 +808,6 @@
   };
 
   // ── DRAG & DROP REORDER ──
-  function initDragDrop() {
-    const tbody = document.getElementById('albumTbody');
-    if (!tbody) return;
-
-    let draggingRow = null;
-    let ghost = null;
-    let offsetY = 0;
-    let lastOver = null;
-
-    function createGhost(row, clientY) {
-      ghost = row.cloneNode(true);
-      ghost.style.cssText = `
-        position:fixed; z-index:9999; left:0; right:0;
-        background:var(--surface2); border:1px solid var(--gold);
-        border-radius:8px; opacity:0.95; pointer-events:none;
-        box-shadow:0 8px 32px rgba(0,0,0,0.5);
-        transition:none;
-      `;
-      const rect = row.getBoundingClientRect();
-      ghost.style.top = rect.top + 'px';
-      ghost.style.width = rect.width + 'px';
-      offsetY = clientY - rect.top;
-      document.body.appendChild(ghost);
-    }
-
-    function moveGhost(clientY) {
-      if (!ghost) return;
-      ghost.style.top = (clientY - offsetY) + 'px';
-    }
-
-    function getRowAt(clientY) {
-      const rows = [...tbody.querySelectorAll('tr[data-id]')].filter(r => r !== draggingRow);
-      for (const r of rows) {
-        const rect = r.getBoundingClientRect();
-        if (clientY >= rect.top && clientY <= rect.bottom) return r;
-      }
-      return null;
-    }
-
-    function clearHighlight() {
-      tbody.querySelectorAll('tr').forEach(r => r.classList.remove('album-row-over'));
-    }
-
-    async function finishDrop(clientY) {
-      if (!draggingRow) return;
-      const overRow = getRowAt(clientY);
-      if (ghost) { ghost.remove(); ghost = null; }
-      draggingRow.style.opacity = '';
-      clearHighlight();
-
-      if (overRow && overRow !== draggingRow) {
-        const rows = [...tbody.querySelectorAll('tr[data-id]')];
-        const fromIdx = rows.indexOf(draggingRow);
-        const toIdx = rows.indexOf(overRow);
-        if (fromIdx < toIdx) tbody.insertBefore(draggingRow, overRow.nextSibling);
-        else tbody.insertBefore(draggingRow, overRow);
-        const newOrder = [...tbody.querySelectorAll('tr[data-id]')].map((r, i) => ({ id: r.dataset.id, order: i }));
-        await saveOrder(newOrder);
-        showToast('Urutan album disimpan!', 'success');
-      }
-      draggingRow = null;
-      lastOver = null;
-    }
-
-    tbody.querySelectorAll('tr[data-id]').forEach(row => {
-      const handle = row.querySelector('.drag-handle');
-      if (!handle) return;
-
-      // MOUSE
-      handle.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        isDragging = true;
-        draggingRow = row;
-        row.style.opacity = '0.3';
-        createGhost(row, e.clientY);
-      });
-
-      // TOUCH
-      handle.addEventListener('touchstart', (e) => {
-        isDragging = true;
-        draggingRow = row;
-        row.style.opacity = '0.3';
-        createGhost(row, e.touches[0].clientY);
-      }, { passive: true });
-    });
-
-    // Mouse move/up
-    document.addEventListener('mousemove', (e) => {
-      if (!draggingRow) return;
-      moveGhost(e.clientY);
-      const over = getRowAt(e.clientY);
-      if (over !== lastOver) {
-        clearHighlight();
-        if (over && over !== draggingRow) over.classList.add('album-row-over');
-        lastOver = over;
-      }
-    });
-    document.addEventListener('mouseup', (e) => {
-      if (draggingRow) finishDrop(e.clientY).then(() => {
-        isDragging = false;
-        if (pendingRender) { pendingRender = false; renderDashboard(); renderAlbumTable(); }
-      });
-    });
-
-    // Touch move/end
-    document.addEventListener('touchmove', (e) => {
-      if (!draggingRow) return;
-      const t = e.touches[0];
-      moveGhost(t.clientY);
-      const over = getRowAt(t.clientY);
-      if (over !== lastOver) {
-        clearHighlight();
-        if (over && over !== draggingRow) over.classList.add('album-row-over');
-        lastOver = over;
-      }
-    }, { passive: true });
-    document.addEventListener('touchend', (e) => {
-      if (draggingRow) finishDrop(e.changedTouches[0].clientY).then(() => {
-        isDragging = false;
-        if (pendingRender) { pendingRender = false; renderDashboard(); renderAlbumTable(); }
-      });
-    });
-  }
-
-  async function saveOrder(orderArr) {
-    // Save order field to each album doc in Firestore
-    const { writeBatch, doc: fsDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-    const batch = writeBatch(db);
-    orderArr.forEach(({ id, order }) => {
-      batch.update(fsDoc(db, 'albums', id), { order });
-    });
-    await batch.commit();
-    // Update local sort
-    allAlbums.sort((a, b) => {
-      const oa = orderArr.find(x => x.id === a.id)?.order ?? 999;
-      const ob = orderArr.find(x => x.id === b.id)?.order ?? 999;
-      return oa - ob;
-    });
-  }
   window.showToast = (msg, type = 'success') => {
     const t = document.getElementById('toast');
     t.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
