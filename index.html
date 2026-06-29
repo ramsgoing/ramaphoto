@@ -218,6 +218,17 @@
 </head>
 <body>
 
+<!-- ══ MAINTENANCE PAGE ══ -->
+<div id="maintenancePage" style="display:none; min-height:100vh; background:var(--bg); align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:40px 24px;">
+  <svg width="64" height="64" fill="none" stroke="var(--gold)" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:24px;opacity:0.8;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><circle cx="12" cy="16" r="0.5" fill="var(--gold)"/></svg>
+  <h1 id="maintTitle" style="font-family:'Playfair Display',serif;font-size:clamp(24px,5vw,40px);color:var(--white);margin-bottom:16px;">Sedang dalam Pemeliharaan</h1>
+  <p id="maintMsg" style="color:var(--muted);font-size:15px;max-width:480px;line-height:1.8;">Kami sedang melakukan pemeliharaan sistem untuk memberikan pengalaman yang lebih baik. Silakan kembali lagi dalam beberapa saat.</p>
+  <div style="margin-top:32px;width:40px;height:2px;background:var(--gold);border-radius:2px;"></div>
+</div>
+
+<!-- ══ MAIN CONTENT ══ -->
+<div id="mainContent">
+
 <!-- ══ DESKTOP ══ -->
 <nav>
   <a href="#" class="nav-logo">
@@ -417,6 +428,8 @@
     </div>
   </div>
 </div>
+
+</div><!-- end mainContent -->
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -628,7 +641,25 @@
     } catch(e) { /* silent fail */ }
   };
 
-  // ── REALTIME LISTENERS ──
+  // ── MAINTENANCE CHECK ──
+  onSnapshot(doc(db, 'settings', 'main'), (snap) => {
+    if (snap.exists()) {
+      const d = snap.data();
+      applySettings(d);
+      const isMaintenance = d.maintenance === true;
+      const maintenanceEl = document.getElementById('maintenancePage');
+      const mainEl = document.getElementById('mainContent');
+      if (isMaintenance) {
+        document.getElementById('maintTitle').textContent = d.maintTitle || 'Sedang dalam Pemeliharaan';
+        document.getElementById('maintMsg').textContent = d.maintMsg || 'Kami sedang melakukan pemeliharaan sistem untuk memberikan pengalaman yang lebih baik. Silakan kembali lagi dalam beberapa saat.';
+        maintenanceEl.style.display = 'flex';
+        mainEl.style.display = 'none';
+      } else {
+        maintenanceEl.style.display = 'none';
+        mainEl.style.display = 'block';
+      }
+    }
+  });
   onSnapshot(collection(db, 'albums'), (snap) => {
     allAlbums = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => {
@@ -640,10 +671,6 @@
       });
     renderAlbums(currentQ);
     mRenderAlbums(mCurrentQ);
-  });
-
-  onSnapshot(doc(db, 'settings', 'main'), (snap) => {
-    if (snap.exists()) applySettings(snap.data());
   });
 
   // ── NAV ACTIVE (desktop) ──
