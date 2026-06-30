@@ -299,6 +299,16 @@
     <div class="field"><label>TANGGAL</label><input type="text" id="modalTanggal" placeholder="contoh: Mei 2026"/></div>
     <div class="field"><label>JUMLAH FOTO</label><input type="number" id="modalFoto" placeholder="contoh: 248" min="0"/></div>
     <div class="field"><label>LINK GOOGLE DRIVE</label><input type="url" id="modalDrive" placeholder="https://drive.google.com/drive/folders/..."/></div>
+    <div class="field">
+      <label>DURASI TERSEDIA (sebelum otomatis dihapus)</label>
+      <select id="modalDuration" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+        <option value="7">7 hari</option>
+        <option value="14" selected>14 hari (default)</option>
+        <option value="30">30 hari</option>
+        <option value="60">60 hari</option>
+        <option value="0">Tidak pernah dihapus</option>
+      </select>
+    </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-save" id="btnSave" onclick="saveAlbum()">Simpan</button>
@@ -473,20 +483,20 @@
     autoDeleteExpired();
   }
 
-  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
-
-  function daysLeft(createdAt) {
+  function daysLeft(createdAt, durationDays) {
     if (!createdAt?.seconds) return null;
+    const dur = (durationDays === undefined || durationDays === null) ? 14 : durationDays;
+    if (dur === 0) return Infinity; // never expires
     const created = createdAt.seconds * 1000;
-    const expires = created + TWO_WEEKS_MS;
+    const expires = created + (dur * 24 * 60 * 60 * 1000);
     const diff = expires - Date.now();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
   async function autoDeleteExpired() {
     const expired = allAlbums.filter(a => {
-      const d = daysLeft(a.createdAt);
-      return d !== null && d <= 0;
+      const d = daysLeft(a.createdAt, a.durationDays);
+      return d !== null && d !== Infinity && d <= 0;
     });
     for (const a of expired) {
       try {
@@ -517,11 +527,12 @@
         </button>
       </div>
     </td>`;
-    const d = daysLeft(a.createdAt);
+    const d = daysLeft(a.createdAt, a.durationDays);
     const ttlCell = minimal
-      ? `<td><span class="badge ${d===null?'':d<=3?'':'badge-graduation'}" style="${d!==null&&d<=3?'background:rgba(224,82,82,0.15);color:#e05252;':d!==null&&d<=7?'background:rgba(255,165,0,0.15);color:orange;':''}">${d===null?'-':d<=0?'Kadaluarsa':d+' hari'}</span></td>`
+      ? `<td><span class="badge ${d===null||d===Infinity?'':d<=3?'':'badge-graduation'}" style="${d===Infinity?'background:rgba(106,170,255,0.15);color:#6aaaff;':d!==null&&d<=3?'background:rgba(224,82,82,0.15);color:#e05252;':d!==null&&d<=7?'background:rgba(255,165,0,0.15);color:orange;':''}">${d===null?'-':d===Infinity?'∞':d<=0?'Kadaluarsa':d+' hari'}</span></td>`
       : (() => {
         if (d === null) return `<td><span class="no-link">-</span></td>`;
+        if (d === Infinity) return `<td><span class="badge" style="background:rgba(106,170,255,0.15);color:#6aaaff;">∞ Tidak dihapus</span></td>`;
         if (d <= 0) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">Kadaluarsa</span></td>`;
         if (d <= 3) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">⚠️ ${d} hari lagi</span></td>`;
         if (d <= 7) return `<td><span class="badge" style="background:rgba(255,165,0,0.15);color:orange;">${d} hari lagi</span></td>`;
@@ -568,6 +579,7 @@
         document.getElementById('modalTanggal').value = a.tanggal || '';
         document.getElementById('modalFoto').value = a.foto || '';
         document.getElementById('modalDrive').value = a.drive || '';
+        document.getElementById('modalDuration').value = (a.durationDays !== undefined) ? a.durationDays : 14;
         currentThumbUrl = a.thumbUrl || '';
         if (a.thumbUrl) {
           document.getElementById('thumbPreview').src = a.thumbUrl;
@@ -580,6 +592,7 @@
       document.getElementById('modalTitle').textContent = 'Tambah Album';
       ['modalName','modalKategori','modalTanggal','modalDrive'].forEach(i => document.getElementById(i).value = '');
       document.getElementById('modalFoto').value = '';
+      document.getElementById('modalDuration').value = '14';
     }
     document.getElementById('albumModal').classList.add('open');
   };
@@ -695,6 +708,7 @@
         tanggal: document.getElementById('modalTanggal').value.trim(),
         foto: parseInt(document.getElementById('modalFoto').value) || 0,
         drive: document.getElementById('modalDrive').value.trim(),
+        durationDays: parseInt(document.getElementById('modalDuration').value),
         thumbUrl,
       };
 
@@ -812,7 +826,7 @@
     }
   };
 
-  // ── DRAG & DROP REORDER ──
+  // ── TOAST ──
   window.showToast = (msg, type = 'success') => {
     const t = document.getElementById('toast');
     t.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
