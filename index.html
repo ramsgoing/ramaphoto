@@ -14,19 +14,50 @@
     }
     [data-theme="light"] {
       --bg: #faf8f4; --surface: #ffffff; --surface2: #f3f0ea;
-      --border: #e5e0d5; --gold: #b8923a; --gold-light: #c9a84c;
-      --text: #1a1a1a; --muted: #767066; --white: #111111;
+      --border: #e5e0d5; --gold: #a87d28; --gold-light: #c9a84c;
+      --text: #1a1a1a; --muted: #6b6459; --white: #111111;
     }
     body, nav, .album-card, .about-card, .features { transition: background-color .3s, border-color .3s, color .3s; }
-    [data-theme="light"] .hero-bg { background: linear-gradient(135deg, #faf8f4 50%, #f0e8d8 100%); }
-    [data-theme="light"] .hero-placeholder { background: linear-gradient(135deg, #f0e8d8 0%, #e8dcc0 40%, #faf8f4 100%); }
-    [data-theme="light"] .hero-placeholder svg { opacity: 0.08; stroke: #1a1a1a; }
-    [data-theme="light"] .hero-img-wrap::before { background: linear-gradient(to right, var(--bg), transparent); }
-    [data-theme="light"] .photo-count { background: rgba(255,255,255,0.85); color: #1a1a1a; }
-    [data-theme="light"] .btn-primary { color: #fff; }
-    [data-theme="light"] nav { background: rgba(250,248,244,0.85); }
-    [data-theme="light"] .m-hero-gradient { background: linear-gradient(135deg, #f0e8d8, #faf8f4); }
-    [data-theme="light"] .thumb-placeholder svg { opacity: 0.15; }
+
+    /* Light mode: hero keeps a dark scrim so its text (designed for dark bg) stays readable */
+    [data-theme="light"] .hero-bg { background: linear-gradient(135deg, #1a1410 50%, #0d0d0d 100%); }
+    [data-theme="light"] .hero-placeholder { background: linear-gradient(135deg, #221a10 0%, #2a1f0a 40%, #1a1410 100%); }
+    [data-theme="light"] .hero-placeholder svg { opacity: 0.15; stroke: #fff; }
+    [data-theme="light"] .hero-img-wrap::before { background: linear-gradient(to right, #1a1410, transparent); }
+    [data-theme="light"] .hero-eyebrow { color: #d4af5a; }
+    [data-theme="light"] .hero-title { color: #fff; }
+    [data-theme="light"] .hero-title .accent { color: #d4af5a; }
+    [data-theme="light"] .hero-sub { color: #cfc9bf; }
+    [data-theme="light"] .btn-outline { color: #fff; border-color: rgba(255,255,255,0.3); }
+    [data-theme="light"] .btn-outline:hover { border-color: #d4af5a; color: #d4af5a; }
+    [data-theme="light"] .btn-primary { color: #1a1410; background: #d4af5a; }
+    [data-theme="light"] .btn-primary:hover { background: #e2c27d; }
+    [data-theme="light"] nav { background: rgba(250,248,244,0.9); border-bottom-color: var(--border); }
+    [data-theme="light"] .nav-logo, [data-theme="light"] .nav-links a { color: var(--text); }
+    [data-theme="light"] .nav-links a.active, [data-theme="light"] .nav-links a:hover { color: var(--gold); }
+    [data-theme="light"] .photo-count { background: rgba(0,0,0,0.6); color: #fff; }
+    [data-theme="light"] .thumb-placeholder svg { opacity: 0.18; stroke: #333; }
+    [data-theme="light"] .album-card { background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    [data-theme="light"] .search-box { background: var(--surface); }
+    [data-theme="light"] .search-box input { color: var(--text); }
+    [data-theme="light"] .search-box input::placeholder { color: var(--muted); }
+    [data-theme="light"] .features { background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    [data-theme="light"] .about-card { background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+
+    /* Mobile light mode */
+    [data-theme="light"] .m-hero-gradient { background: linear-gradient(135deg, #1a1410, #0d0d0d); }
+    [data-theme="light"] .m-eyebrow { color: #d4af5a; }
+    [data-theme="light"] .m-title { color: #fff; }
+    [data-theme="light"] .m-title .accent { color: #d4af5a; }
+    [data-theme="light"] .m-sub { color: #cfc9bf; }
+    [data-theme="light"] .m-btn-outline { color: #fff; border-color: rgba(255,255,255,0.3); }
+    [data-theme="light"] .m-btn-primary { color: #1a1410; background: #d4af5a; }
+    [data-theme="light"] .m-nav { background: var(--bg); border-bottom-color: var(--border); }
+    [data-theme="light"] .m-logo { color: var(--text); }
+    [data-theme="light"] .m-album-thumb svg { opacity: 0.5; }
+    [data-theme="light"] .m-detail-img-placeholder { background: linear-gradient(135deg,#f0ece2,#e5e0d5); }
+    [data-theme="light"] .m-detail-img-placeholder svg { stroke: #999; }
+
     .theme-toggle {
       display: flex; align-items: center; justify-content: center;
       width: 32px; height: 32px; border-radius: 8px;
