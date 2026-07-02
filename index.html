@@ -505,6 +505,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg>
         Buka di Google Drive
       </a>
+      <a href="https://saweria.co/ramsgoing" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;font-weight:500;text-decoration:none;margin-bottom:10px;transition:all .2s;" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        ☕ Support Me
+      </a>
       <button class="m-btn-back" onclick="mGoHome()">← Kembali ke Album</button>
     </div>
   </div>
@@ -559,7 +562,7 @@
       const ts = a.thumbUrl ? `background:url('${a.thumbUrl}') center/cover no-repeat;` : `background:${BG_COLORS[i%BG_COLORS.length]};`;
       const ti = a.thumbUrl ? '' : `<svg width="48" height="48" fill="none" stroke="#333" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
       const newBadge = isNew(a.createdAt) ? `<div class="badge-new">NEW</div>` : '';
-      return `<div class="album-card"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div>${newBadge}</div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div><div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer"><a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive" onclick="trackClick('${a.id}')">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a></div></div>`;
+      return `<div class="album-card"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div>${newBadge}</div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div><div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer"><a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive" onclick="trackClick('${a.id}')">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a><a href="https://saweria.co/ramsgoing" target="_blank" class="btn-drive" style="margin-top:6px;color:var(--muted);font-size:12px;">☕ Support Me</a></div></div>`;
     }).join('');
     if (!filterQ && !showAll && filtered.length > PREVIEW_LIMIT) { btnAll.style.display=''; btnAll.innerHTML=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Lihat Semua Album (${filtered.length})`; }
     else { btnAll.style.display='none'; }
