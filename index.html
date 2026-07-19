@@ -564,7 +564,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg>
         Buka di Google Drive
       </a>
-      <button class="m-btn-drive" id="mDetailShareBtn" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:0;" onclick="shareAlbum(currentAlbumId, event)">
+      <button class="m-btn-drive" id="mDetailShareBtn" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:0;" onclick="shareCurrentAlbum(event)">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
         Bagikan Album
       </button>
@@ -736,6 +736,8 @@
       window.prompt('Salin link album ini:', shareUrl);
     }
   };
+
+  window.shareCurrentAlbum = (e) => shareAlbum(currentAlbumId, e);
 
   let toastTimer = null;
   function showToast(msg) {
