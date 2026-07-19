@@ -135,6 +135,8 @@
     .thumb-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transition: transform .35s; }
     .album-card:hover .thumb-placeholder { transform: scale(1.05); }
     .photo-count { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); color: var(--white); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; }
+    .share-btn { position: absolute; bottom: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s, color .2s; z-index: 2; }
+    .share-btn:hover { background: var(--gold); color: #111; }
     .album-info { padding: 14px 16px 0; }
     .album-name { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; color: var(--white); margin-bottom: 4px; }
     .album-name svg { color: var(--gold); flex-shrink: 0; }
@@ -165,6 +167,14 @@
     .thanks-msg { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 24px; }
     .thanks-btn { width: 100%; padding: 12px; background: var(--gold); color: #111; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
     .thanks-btn:hover { background: var(--gold-light); }
+
+    /* ── SHARE TOAST ── */
+    .share-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,0.3); z-index: 300; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; }
+    .share-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── SHARED ALBUM HIGHLIGHT (desktop deep link) ── */
+    @keyframes highlightPulse { 0%, 100% { border-color: var(--gold); box-shadow: 0 0 0 0 rgba(201,168,76,0.4); } 50% { border-color: var(--gold-light); box-shadow: 0 0 0 8px rgba(201,168,76,0); } }
+    .album-card.highlighted { animation: highlightPulse 1s ease 3; }
 
     /* ── LOADING ── */
     .loading-spinner { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 48px; color: var(--muted); font-size: 14px; grid-column: 1/-1; }
@@ -243,6 +253,8 @@
       .m-album-name { font-weight: 600; font-size: 14px; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .m-album-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
       .m-album-arrow { color: var(--muted); flex-shrink: 0; }
+      .m-share-btn { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--surface2); color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: color .2s, background .2s; }
+      .m-share-btn:hover, .m-share-btn:active { color: var(--gold); background: rgba(201,168,76,0.12); }
       .m-btn-all { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; background: transparent; border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 16px; }
 
       /* Mobile album detail page */
@@ -552,6 +564,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg>
         Buka di Google Drive
       </a>
+      <button class="m-btn-drive" id="mDetailShareBtn" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:0;" onclick="shareAlbum(currentAlbumId, event)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+        Bagikan Album
+      </button>
       <a href="https://saweria.co/ramsgoing" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;font-weight:500;text-decoration:none;margin-bottom:10px;transition:all .2s;" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
         ☕ Support Me
       </a>
@@ -653,7 +669,7 @@
       const ti = a.thumbUrl ? '' : `<svg width="48" height="48" fill="none" stroke="#333" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
       const newBadge = isNew(a.createdAt) ? `<div class="badge-new">NEW</div>` : '';
       const avgRating = a.avgRating ? `<div class="album-rating">★ ${a.avgRating.toFixed(1)} <span style="color:var(--muted);">(${a.reviewCount||0})</span></div>` : '';
-      return `<div class="album-card"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div>${newBadge}</div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div>${avgRating}<div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer"><a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive" onclick="trackClick('${a.id}')">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a><a href="https://saweria.co/ramsgoing" target="_blank" class="btn-drive" style="margin-top:6px;color:var(--muted);font-size:12px;">☕ Support Me</a></div></div>`;
+      return `<div class="album-card" data-album-id="${a.id}"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div><div class="share-btn" onclick="shareAlbum('${a.id}', event)" title="Bagikan album"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg></div>${newBadge}</div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div>${avgRating}<div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer"><a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive" onclick="trackClick('${a.id}')">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a><a href="https://saweria.co/ramsgoing" target="_blank" class="btn-drive" style="margin-top:6px;color:var(--muted);font-size:12px;">☕ Support Me</a></div></div>`;
     }).join('');
     if (!filterQ && !showAll && filtered.length > PREVIEW_LIMIT) { btnAll.style.display=''; btnAll.innerHTML=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Lihat Semua Album (${filtered.length})`; }
     else { btnAll.style.display='none'; }
@@ -676,6 +692,7 @@
           <div class="m-album-name">${a.name}${isNew(a.createdAt) ? `<span class="m-badge-new">NEW</span>` : ''}</div>
           <div class="m-album-meta">${a.tanggal||''} · ${Number(a.foto||0).toLocaleString('id')} Foto</div>
         </div>
+        <div class="m-share-btn" onclick="shareAlbum('${a.id}', event)" title="Bagikan album"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg></div>
         <svg class="m-album-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`;
     }).join('');
@@ -691,6 +708,75 @@
     const expires = createdAt.seconds * 1000 + (dur * 24 * 60 * 60 * 1000);
     return Math.ceil((expires - Date.now()) / (1000 * 60 * 60 * 24));
   }
+
+  window.shareAlbum = async (albumId, e) => {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    const a = allAlbums.find(x => x.id === albumId);
+    const name = a ? a.name : 'Album Foto';
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('album', albumId);
+    const shareUrl = url.toString();
+    const shareText = `Cek foto album "${name}" di Rams Gallery`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: name, text: shareText, url: shareUrl });
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return; // user cancelled, do nothing
+        // fall through to clipboard fallback below
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast('Link album disalin! 📋');
+    } catch (err) {
+      window.prompt('Salin link album ini:', shareUrl);
+    }
+  };
+
+  let toastTimer = null;
+  function showToast(msg) {
+    let el = document.getElementById('shareToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'shareToast';
+      el.className = 'share-toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  function tryOpenSharedAlbum() {
+    const id = new URLSearchParams(window.location.search).get('album');
+    if (!id) return;
+    const a = allAlbums.find(x => x.id === id);
+    if (!a) return;
+
+    const isMobileView = window.matchMedia('(max-width: 768px)').matches;
+    if (isMobileView) {
+      mOpenDetail(id);
+      return;
+    }
+    // Desktop: make sure the card is in the visible/expanded list, then scroll + highlight it
+    showAll = true;
+    renderAlbums(currentQ);
+    setTimeout(() => {
+      const card = document.querySelector(`.album-card[data-album-id="${id}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('highlighted');
+        setTimeout(() => card.classList.remove('highlighted'), 3200);
+      }
+    }, 100);
+  }
+
+  let sharedAlbumOpened = false;
 
   window.mOpenDetail = (id) => {
     const a = allAlbums.find(x => x.id === id);
@@ -991,6 +1077,7 @@
       });
     renderAlbums(currentQ);
     mRenderAlbums(mCurrentQ);
+    if (!sharedAlbumOpened) { sharedAlbumOpened = true; tryOpenSharedAlbum(); }
   });
 
   // ── NAV ACTIVE (desktop) ──
