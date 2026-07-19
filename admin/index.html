@@ -947,6 +947,7 @@
       }));
 
       showToast(`${items.length} review dihapus!`, 'success');
+      btn.disabled = false;
       loadAllReviews();
     } catch(e) {
       showToast('Gagal hapus: ' + e.message, 'error');
