@@ -840,6 +840,7 @@
     if (reviewUnsub) reviewUnsub();
     currentAlbumId = albumId;
     currentRating = 0;
+    showAllReviews = false;
     document.querySelectorAll('#starInput span').forEach(s => s.classList.remove('active'));
     document.getElementById('reviewName').value = '';
     document.getElementById('reviewMsg').value = '';
@@ -865,25 +866,40 @@
     }
 
     const avg = reviews.reduce((s, r) => s + (r.rating||0), 0) / reviews.length;
-    const stars = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+    const filledStars = Math.round(avg);
+    const stars = '★'.repeat(filledStars) + '☆'.repeat(5 - filledStars);
     avgEl.style.display = 'flex';
     document.getElementById('mAvgStars').textContent = stars;
     document.getElementById('mAvgNum').textContent = avg.toFixed(1);
     document.getElementById('mAvgCount').textContent = `(${reviews.length} review)`;
 
-    list.innerHTML = reviews.map(r => {
-      const stars = '★'.repeat(r.rating||0) + '☆'.repeat(5-(r.rating||0));
-      const date = r.createdAt?.seconds ? new Date(r.createdAt.seconds*1000).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '';
+    const visible = showAllReviews ? reviews : reviews.slice(0, REVIEW_LIMIT);
+    const hasMore = reviews.length > REVIEW_LIMIT;
+
+    list.innerHTML = visible.map(r => {
+      const s = '★'.repeat(r.rating||0) + '☆'.repeat(5-(r.rating||0));
+      const date = r.createdAt?.seconds
+        ? new Date(r.createdAt.seconds*1000).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})
+        : '';
       return `<div class="m-review-item">
         <div class="m-review-header">
           <div class="m-review-name">${r.name||'Anonim'}</div>
-          <div class="m-review-stars">${stars}</div>
+          <div class="m-review-stars">${s}</div>
         </div>
         <div class="m-review-msg">${r.message||''}</div>
         <div class="m-review-date">${date}</div>
       </div>`;
-    }).join('');
+    }).join('') + (hasMore ? `
+      <button id="reviewToggleBtn" onclick="toggleShowAllReviews()" style="
+        width:100%; padding:10px; margin-top:8px;
+        background:none; border:1px solid var(--border); border-radius:8px;
+        color:var(--muted); font-size:13px; cursor:pointer;
+      ">${showAllReviews ? '↑ Sembunyikan' : `Lihat semua ${reviews.length} review →`}</button>
+    ` : '');
   }
+
+  const REVIEW_LIMIT = 3;
+  let showAllReviews = false;
 
   window.submitReview = async () => {
     const name = document.getElementById('reviewName').value.trim();
@@ -896,20 +912,11 @@
     btn.disabled = true; btn.textContent = 'Mengirim...';
 
     try {
-      const { addDoc: ad, updateDoc: ud, increment: inc, serverTimestamp: st } =
+      const { addDoc: ad, serverTimestamp: st } =
         await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
       await ad(collection(db, 'albums', currentAlbumId, 'reviews'), {
         name, rating: currentRating, message: msg, createdAt: st()
-      });
-
-      // Update album avg rating
-      const albumReviews = await getDocs(collection(db, 'albums', currentAlbumId, 'reviews'));
-      const all = albumReviews.docs.map(d => d.data().rating || 0);
-      const avg = all.reduce((s,r) => s+r, 0) / all.length;
-      await ud(doc(db, 'albums', currentAlbumId), {
-        avgRating: Math.round(avg * 10) / 10,
-        reviewCount: all.length
       });
 
       btn.textContent = 'Terkirim! ✓';
@@ -917,12 +924,24 @@
       document.getElementById('reviewMsg').value = '';
       document.getElementById('charCount').textContent = '(0/200)';
       currentRating = 0;
+      showAllReviews = false;
       document.querySelectorAll('#starInput span').forEach(s => s.classList.remove('active'));
       setTimeout(() => { btn.disabled = false; btn.textContent = 'Kirim Review'; }, 2000);
     } catch(e) {
       btn.disabled = false; btn.textContent = 'Kirim Review';
       alert('Gagal kirim: ' + e.message);
     }
+  };
+
+  window.toggleShowAllReviews = () => {
+    showAllReviews = !showAllReviews;
+    const list = document.getElementById('mReviewList');
+    const allItems = list.querySelectorAll('.m-review-item');
+    allItems.forEach((el, i) => {
+      el.style.display = (showAllReviews || i < REVIEW_LIMIT) ? '' : 'none';
+    });
+    const btn = document.getElementById('reviewToggleBtn');
+    if (btn) btn.textContent = showAllReviews ? '↑ Sembunyikan' : `Lihat semua →`;
   };
 
   // ── CLICK TRACKING ──
