@@ -250,7 +250,10 @@
           <div><h1>Reviews</h1><div class="topbar-sub">Kelola semua review dari pengunjung.</div></div>
         </div>
         <div class="card">
-          <div class="card-header"><h3>Semua Review</h3></div>
+          <div class="card-header"><h3>Semua Review</h3><button class="btn-add" id="btnDeleteSelectedReviews" style="display:none;background:var(--red);" onclick="deleteSelectedReviews()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Hapus Terpilih (<span id="selectedReviewCount">0</span>)
+          </button></div>
           <div id="reviewsContainer"><div class="tbl-loading"><div class="spinner"></div></div></div>
         </div>
       </div>
@@ -866,6 +869,7 @@
 
       container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
         <thead><tr>
+          <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);width:20px;"><input type="checkbox" id="selectAllReviews" onchange="toggleSelectAllReviews(this.checked)"/></th>
           <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);">Album</th>
           <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);">Nama</th>
           <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);">Rating</th>
@@ -877,6 +881,7 @@
           const stars = '★'.repeat(r.rating||0) + '☆'.repeat(5-(r.rating||0));
           const date = r.createdAt?.seconds ? new Date(r.createdAt.seconds*1000).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '-';
           return `<tr>
+            <td style="padding:14px 20px;border-bottom:1px solid var(--border);"><input type="checkbox" class="review-checkbox" data-album-id="${r.albumId}" data-review-id="${r.id}" onchange="updateSelectedReviewCount()"/></td>
             <td style="padding:14px 20px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);">${r.albumName}</td>
             <td style="padding:14px 20px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;">${r.name||'Anonim'}</td>
             <td style="padding:14px 20px;border-bottom:1px solid var(--border);color:var(--gold);font-size:14px;">${stars}</td>
@@ -890,10 +895,64 @@
           </tr>`;
         }).join('')}</tbody>
       </table>`;
+      updateSelectedReviewCount();
     } catch(e) {
       container.innerHTML = `<div class="tbl-loading">Gagal memuat: ${e.message}</div>`;
     }
   }
+
+  window.toggleSelectAllReviews = (checked) => {
+    document.querySelectorAll('.review-checkbox').forEach(cb => cb.checked = checked);
+    updateSelectedReviewCount();
+  };
+
+  window.updateSelectedReviewCount = () => {
+    const checked = document.querySelectorAll('.review-checkbox:checked');
+    const btn = document.getElementById('btnDeleteSelectedReviews');
+    const countEl = document.getElementById('selectedReviewCount');
+    countEl.textContent = checked.length;
+    btn.style.display = checked.length > 0 ? '' : 'none';
+
+    const all = document.querySelectorAll('.review-checkbox');
+    const selectAll = document.getElementById('selectAllReviews');
+    if (selectAll) selectAll.checked = all.length > 0 && checked.length === all.length;
+  };
+
+  window.deleteSelectedReviews = async () => {
+    const checked = [...document.querySelectorAll('.review-checkbox:checked')];
+    if (checked.length === 0) return;
+    if (!confirm(`Hapus ${checked.length} review terpilih? Tindakan ini tidak bisa dibatalkan.`)) return;
+
+    const btn = document.getElementById('btnDeleteSelectedReviews');
+    btn.disabled = true;
+
+    try {
+      const { deleteDoc: dd, doc: fd, getDocs, collection: col, updateDoc: ud } =
+        await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+
+      const items = checked.map(cb => ({ albumId: cb.dataset.albumId, reviewId: cb.dataset.reviewId }));
+      await Promise.all(items.map(it => dd(fd(db, 'albums', it.albumId, 'reviews', it.reviewId))));
+
+      // Recalculate avg rating per affected album
+      const affectedAlbumIds = [...new Set(items.map(it => it.albumId))];
+      await Promise.all(affectedAlbumIds.map(async (albumId) => {
+        const snap = await getDocs(col(db, 'albums', albumId, 'reviews'));
+        const all = snap.docs.map(d => d.data().rating || 0);
+        if (all.length > 0) {
+          const avg = all.reduce((s,r) => s+r, 0) / all.length;
+          await ud(fd(db, 'albums', albumId), { avgRating: Math.round(avg*10)/10, reviewCount: all.length });
+        } else {
+          await ud(fd(db, 'albums', albumId), { avgRating: null, reviewCount: 0 });
+        }
+      }));
+
+      showToast(`${items.length} review dihapus!`, 'success');
+      loadAllReviews();
+    } catch(e) {
+      showToast('Gagal hapus: ' + e.message, 'error');
+      btn.disabled = false;
+    }
+  };
 
   window.deleteReview = async (albumId, reviewId) => {
     if (!confirm('Hapus review ini?')) return;
