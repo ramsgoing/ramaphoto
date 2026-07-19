@@ -196,6 +196,10 @@
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M8 5V3h8v2"/></svg>
           <span>Album</span>
         </div>
+        <div class="nav-item" onclick="showPanel('reviews')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Reviews</span>
+        </div>
         <div class="nav-item" onclick="showPanel('settings')">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span>Pengaturan</span>
@@ -240,7 +244,16 @@
         </div>
       </div>
 
-      <!-- SETTINGS -->
+      <!-- REVIEWS -->
+      <div class="panel" id="panel-reviews">
+        <div class="topbar">
+          <div><h1>Reviews</h1><div class="topbar-sub">Kelola semua review dari pengunjung.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Semua Review</h3></div>
+          <div id="reviewsContainer"><div class="tbl-loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
       <div class="panel" id="panel-settings">
         <div class="topbar"><div><h1>Pengaturan</h1><div class="topbar-sub">Kelola informasi kontak.</div></div></div>
         <div class="settings-grid">
@@ -455,8 +468,9 @@
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('panel-' + name).classList.add('active');
-    const idx = ['dashboard','albums','settings'].indexOf(name);
+    const idx = ['dashboard','albums','reviews','settings'].indexOf(name);
     document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
+    if (name === 'reviews') loadAllReviews();
   };
 
   // ── DASHBOARD ──
@@ -827,6 +841,84 @@
   };
 
   // ── TOAST ──
+  // ── REVIEWS ──
+  async function loadAllReviews() {
+    const container = document.getElementById('reviewsContainer');
+    container.innerHTML = `<div class="tbl-loading"><div class="spinner"></div></div>`;
+    try {
+      const { getDocs, collection: col, query: q, orderBy: ob, deleteDoc: dd, doc: fd, updateDoc: ud } =
+        await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+
+      let allReviews = [];
+      for (const album of allAlbums) {
+        const snap = await getDocs(q(col(db, 'albums', album.id, 'reviews'), ob('createdAt', 'desc')));
+        snap.docs.forEach(d => {
+          allReviews.push({ id: d.id, albumId: album.id, albumName: album.name, ...d.data() });
+        });
+      }
+
+      allReviews.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+
+      if (allReviews.length === 0) {
+        container.innerHTML = `<div class="tbl-loading">Belum ada review.</div>`;
+        return;
+      }
+
+      container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);">Album</th>
+          <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);">Nama</th>
+          <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);">Rating</th>
+          <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);">Pesan</th>
+          <th style="text-align:left;padding:12px 20px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);">Tanggal</th>
+          <th style="padding:12px 20px;border-bottom:1px solid var(--border);"></th>
+        </tr></thead>
+        <tbody>${allReviews.map(r => {
+          const stars = '★'.repeat(r.rating||0) + '☆'.repeat(5-(r.rating||0));
+          const date = r.createdAt?.seconds ? new Date(r.createdAt.seconds*1000).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '-';
+          return `<tr>
+            <td style="padding:14px 20px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);">${r.albumName}</td>
+            <td style="padding:14px 20px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;">${r.name||'Anonim'}</td>
+            <td style="padding:14px 20px;border-bottom:1px solid var(--border);color:var(--gold);font-size:14px;">${stars}</td>
+            <td style="padding:14px 20px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);max-width:240px;">${r.message||'-'}</td>
+            <td style="padding:14px 20px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);">${date}</td>
+            <td style="padding:14px 20px;border-bottom:1px solid var(--border);">
+              <button class="btn-icon del" onclick="deleteReview('${r.albumId}','${r.id}')" title="Hapus">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              </button>
+            </td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+    } catch(e) {
+      container.innerHTML = `<div class="tbl-loading">Gagal memuat: ${e.message}</div>`;
+    }
+  }
+
+  window.deleteReview = async (albumId, reviewId) => {
+    if (!confirm('Hapus review ini?')) return;
+    try {
+      const { deleteDoc: dd, doc: fd, getDocs, collection: col, updateDoc: ud } =
+        await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      await dd(fd(db, 'albums', albumId, 'reviews', reviewId));
+
+      // Recalculate avg rating
+      const snap = await getDocs(col(db, 'albums', albumId, 'reviews'));
+      const all = snap.docs.map(d => d.data().rating || 0);
+      if (all.length > 0) {
+        const avg = all.reduce((s,r) => s+r, 0) / all.length;
+        await ud(fd(db, 'albums', albumId), { avgRating: Math.round(avg*10)/10, reviewCount: all.length });
+      } else {
+        await ud(fd(db, 'albums', albumId), { avgRating: null, reviewCount: 0 });
+      }
+
+      showToast('Review dihapus!', 'success');
+      loadAllReviews();
+    } catch(e) {
+      showToast('Gagal hapus: ' + e.message, 'error');
+    }
+  };
+
   window.showToast = (msg, type = 'success') => {
     const t = document.getElementById('toast');
     t.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;

@@ -246,6 +246,41 @@
       .m-btn-drive { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; background: var(--gold); color: #111; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; margin-bottom: 10px; }
       .m-btn-back { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: transparent; border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; }
 
+      /* Reviews */
+      .m-reviews { padding: 24px 20px; border-top: 1px solid var(--border); }
+      .m-reviews-title { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+      .m-avg-rating { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; }
+      .m-avg-stars { color: var(--gold); font-size: 18px; letter-spacing: 2px; }
+      .m-avg-num { font-size: 20px; font-weight: 700; color: var(--white); }
+      .m-avg-count { font-size: 12px; color: var(--muted); }
+      .m-review-form { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 20px; }
+      .m-review-form label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; display: block; margin-bottom: 6px; }
+      .m-review-form input, .m-review-form textarea {
+        width: 100%; background: var(--surface2); border: 1px solid var(--border);
+        border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 13px;
+        font-family: inherit; outline: none; margin-bottom: 12px;
+      }
+      .m-review-form textarea { resize: none; height: 72px; }
+      .m-star-input { display: flex; gap: 6px; margin-bottom: 12px; }
+      .m-star-input span { font-size: 28px; cursor: pointer; color: var(--border); transition: color .15s; }
+      .m-star-input span.active { color: var(--gold); }
+      .m-btn-submit {
+        width: 100%; padding: 12px; background: var(--gold); color: #111;
+        border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer;
+      }
+      .m-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+      .m-review-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+      .m-review-item:last-child { border-bottom: none; }
+      .m-review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+      .m-review-name { font-weight: 600; font-size: 13px; color: var(--white); }
+      .m-review-stars { color: var(--gold); font-size: 12px; letter-spacing: 1px; }
+      .m-review-msg { font-size: 12px; color: var(--muted); line-height: 1.6; }
+      .m-review-date { font-size: 10px; color: var(--muted); margin-top: 4px; }
+      .m-no-reviews { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+
+      /* Desktop rating badge on card */
+      .album-rating { font-size: 12px; color: var(--gold); display: flex; align-items: center; gap: 3px; margin-top: 2px; }
+
       /* Countdown banner */
       .m-countdown {
         margin: 0 0 16px;
@@ -510,12 +545,45 @@
       </a>
       <button class="m-btn-back" onclick="mGoHome()">← Kembali ke Album</button>
     </div>
+
+    <!-- Reviews Section -->
+    <div class="m-reviews">
+      <div class="m-reviews-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Reviews
+      </div>
+      <div class="m-avg-rating" id="mAvgRating" style="display:none;">
+        <div class="m-avg-stars" id="mAvgStars"></div>
+        <div class="m-avg-num" id="mAvgNum"></div>
+        <div class="m-avg-count" id="mAvgCount"></div>
+      </div>
+
+      <!-- Form -->
+      <div class="m-review-form">
+        <label>NAMA KAMU</label>
+        <input type="text" id="reviewName" placeholder="contoh: Andi" maxlength="40"/>
+        <label>RATING</label>
+        <div class="m-star-input" id="starInput">
+          <span onclick="setRating(1)">★</span>
+          <span onclick="setRating(2)">★</span>
+          <span onclick="setRating(3)">★</span>
+          <span onclick="setRating(4)">★</span>
+          <span onclick="setRating(5)">★</span>
+        </div>
+        <label>PESAN <span id="charCount" style="color:var(--muted);font-weight:400;">(0/200)</span></label>
+        <textarea id="reviewMsg" placeholder="Gimana foto dari eventnya?" maxlength="200" oninput="document.getElementById('charCount').textContent='('+this.value.length+'/200)'"></textarea>
+        <button class="m-btn-submit" id="reviewSubmitBtn" onclick="submitReview()">Kirim Review</button>
+      </div>
+
+      <!-- List -->
+      <div id="mReviewList"><div class="m-no-reviews">Belum ada review. Jadilah yang pertama! ⭐</div></div>
+    </div>
   </div>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAgIIyi08oxaHMnqJHiSEDStxHNMTzZ5oo",
@@ -562,7 +630,8 @@
       const ts = a.thumbUrl ? `background:url('${a.thumbUrl}') center/cover no-repeat;` : `background:${BG_COLORS[i%BG_COLORS.length]};`;
       const ti = a.thumbUrl ? '' : `<svg width="48" height="48" fill="none" stroke="#333" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
       const newBadge = isNew(a.createdAt) ? `<div class="badge-new">NEW</div>` : '';
-      return `<div class="album-card"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div>${newBadge}</div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div><div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer"><a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive" onclick="trackClick('${a.id}')">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a><a href="https://saweria.co/ramsgoing" target="_blank" class="btn-drive" style="margin-top:6px;color:var(--muted);font-size:12px;">☕ Support Me</a></div></div>`;
+      const avgRating = a.avgRating ? `<div class="album-rating">★ ${a.avgRating.toFixed(1)} <span style="color:var(--muted);">(${a.reviewCount||0})</span></div>` : '';
+      return `<div class="album-card"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div>${newBadge}</div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div>${avgRating}<div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer"><a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive" onclick="trackClick('${a.id}')">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a><a href="https://saweria.co/ramsgoing" target="_blank" class="btn-drive" style="margin-top:6px;color:var(--muted);font-size:12px;">☕ Support Me</a></div></div>`;
     }).join('');
     if (!filterQ && !showAll && filtered.length > PREVIEW_LIMIT) { btnAll.style.display=''; btnAll.innerHTML=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Lihat Semua Album (${filtered.length})`; }
     else { btnAll.style.display='none'; }
@@ -637,6 +706,7 @@
     document.getElementById('mPageHome').classList.remove('active');
     document.getElementById('mPageDetail').classList.add('active');
     window.scrollTo(0,0);
+    loadReviews(id);
   };
 
   // ── MOBILE DRAWER ──
@@ -666,6 +736,7 @@
     }
   };
   window.mGoHome = () => {
+    if (reviewUnsub) { reviewUnsub(); reviewUnsub = null; }
     document.getElementById('mPageDetail').classList.remove('active');
     document.getElementById('mPageHome').classList.add('active');
     window.scrollTo(0,0);
@@ -752,6 +823,107 @@
     if (saved) { applyTheme(saved); }
     else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) { applyTheme('light'); }
   })();
+
+  // ── REVIEWS ──
+  let currentRating = 0;
+  let currentAlbumId = null;
+  let reviewUnsub = null;
+
+  window.setRating = (r) => {
+    currentRating = r;
+    document.querySelectorAll('#starInput span').forEach((s, i) => {
+      s.classList.toggle('active', i < r);
+    });
+  };
+
+  function loadReviews(albumId) {
+    if (reviewUnsub) reviewUnsub();
+    currentAlbumId = albumId;
+    currentRating = 0;
+    document.querySelectorAll('#starInput span').forEach(s => s.classList.remove('active'));
+    document.getElementById('reviewName').value = '';
+    document.getElementById('reviewMsg').value = '';
+    document.getElementById('charCount').textContent = '(0/200)';
+
+    reviewUnsub = onSnapshot(
+      query(collection(db, 'albums', albumId, 'reviews'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        const reviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderReviews(reviews, albumId);
+      }
+    );
+  }
+
+  function renderReviews(reviews, albumId) {
+    const list = document.getElementById('mReviewList');
+    const avgEl = document.getElementById('mAvgRating');
+
+    if (reviews.length === 0) {
+      list.innerHTML = `<div class="m-no-reviews">Belum ada review. Jadilah yang pertama! ⭐</div>`;
+      avgEl.style.display = 'none';
+      return;
+    }
+
+    const avg = reviews.reduce((s, r) => s + (r.rating||0), 0) / reviews.length;
+    const stars = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+    avgEl.style.display = 'flex';
+    document.getElementById('mAvgStars').textContent = stars;
+    document.getElementById('mAvgNum').textContent = avg.toFixed(1);
+    document.getElementById('mAvgCount').textContent = `(${reviews.length} review)`;
+
+    list.innerHTML = reviews.map(r => {
+      const stars = '★'.repeat(r.rating||0) + '☆'.repeat(5-(r.rating||0));
+      const date = r.createdAt?.seconds ? new Date(r.createdAt.seconds*1000).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '';
+      return `<div class="m-review-item">
+        <div class="m-review-header">
+          <div class="m-review-name">${r.name||'Anonim'}</div>
+          <div class="m-review-stars">${stars}</div>
+        </div>
+        <div class="m-review-msg">${r.message||''}</div>
+        <div class="m-review-date">${date}</div>
+      </div>`;
+    }).join('');
+  }
+
+  window.submitReview = async () => {
+    const name = document.getElementById('reviewName').value.trim();
+    const msg = document.getElementById('reviewMsg').value.trim();
+    if (!name) { alert('Nama wajib diisi!'); return; }
+    if (!currentRating) { alert('Pilih rating dulu!'); return; }
+    if (!msg) { alert('Tulis pesanmu dulu!'); return; }
+
+    const btn = document.getElementById('reviewSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Mengirim...';
+
+    try {
+      const { addDoc: ad, updateDoc: ud, increment: inc, serverTimestamp: st } =
+        await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+
+      await ad(collection(db, 'albums', currentAlbumId, 'reviews'), {
+        name, rating: currentRating, message: msg, createdAt: st()
+      });
+
+      // Update album avg rating
+      const albumReviews = await getDocs(collection(db, 'albums', currentAlbumId, 'reviews'));
+      const all = albumReviews.docs.map(d => d.data().rating || 0);
+      const avg = all.reduce((s,r) => s+r, 0) / all.length;
+      await ud(doc(db, 'albums', currentAlbumId), {
+        avgRating: Math.round(avg * 10) / 10,
+        reviewCount: all.length
+      });
+
+      btn.textContent = 'Terkirim! ✓';
+      document.getElementById('reviewName').value = '';
+      document.getElementById('reviewMsg').value = '';
+      document.getElementById('charCount').textContent = '(0/200)';
+      currentRating = 0;
+      document.querySelectorAll('#starInput span').forEach(s => s.classList.remove('active'));
+      setTimeout(() => { btn.disabled = false; btn.textContent = 'Kirim Review'; }, 2000);
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Kirim Review';
+      alert('Gagal kirim: ' + e.message);
+    }
+  };
 
   // ── CLICK TRACKING ──
   window.trackClick = async (albumId) => {
