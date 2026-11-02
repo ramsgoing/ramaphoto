@@ -115,7 +115,9 @@ export default {
         const id = p.slice(7), w = Math.min(Number(url.searchParams.get('w')) || 400, 1000);
         const m = await (await g(env, `https://www.googleapis.com/drive/v3/files/${id}?fields=thumbnailLink`)).json();
         if (!m.thumbnailLink) return new Response('not found', { status: 404, headers: cors });
-        const img = await fetch(m.thumbnailLink.replace(/=s\d+.*$/, '=w' + w));
+        // file privat: thumbnailLink harus diambil dengan kredensial (bukan tanpa login)
+        const img = await fetch(m.thumbnailLink.replace(/=s\d+.*$/, '=w' + w), { headers: { authorization: 'Bearer ' + await gToken(env) } });
+        if (!img.ok) return new Response('thumb gagal', { status: 502, headers: cors });
         return new Response(img.body, { headers: { ...cors, 'content-type': img.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public, max-age=86400' } });
       }
 
