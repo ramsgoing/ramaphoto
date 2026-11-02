@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Rams Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d0d; --surface: #161616; --surface2: #1e1e1e; --surface3: #242424;
+      --border: #2a2a2a; --gold: #c9a84c; --gold-light: #e2c27d;
+      --text: #f0f0f0; --muted: #777; --white: #fff;
+      --red: #e05252; --green: #4caf7d;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; min-height: 100vh; }
+
+    /* LOGIN */
+    #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 48px 40px; width: 100%; max-width: 380px; }
+    .login-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; margin-bottom: 32px; }
+    .login-logo svg { color: var(--gold); }
+    .login-box h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .login-box p { color: var(--muted); margin-bottom: 28px; font-size: 13px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 6px; }
+    .field input, .field textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 11px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; font-family: inherit; }
+    .field input:focus, .field textarea:focus { border-color: var(--gold); }
+    .field textarea { resize: vertical; min-height: 72px; }
+    .login-err { color: var(--red); font-size: 12px; margin-bottom: 12px; display: none; }
+    .btn-full { width: 100%; padding: 12px; background: var(--gold); color: #111; border: none; border-radius: 9px; font-weight: 700; font-size: 14px; cursor: pointer; transition: background .2s; }
+    .btn-full:hover { background: var(--gold-light); }
+
+    /* LAYOUT */
+    #adminScreen { display: none; min-height: 100vh; }
+    .admin-wrap { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; }
+    .sidebar-logo { display: flex; align-items: center; gap: 9px; padding: 22px 20px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; letter-spacing: 0.03em; }
+    .sidebar-logo svg { color: var(--gold); }
+    .sidebar-nav { padding: 16px 10px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 500; transition: all .18s; margin-bottom: 2px; user-select: none; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(201,168,76,0.12); color: var(--gold); }
+    .sidebar-footer { padding: 16px 10px; border-top: 1px solid var(--border); }
+    .btn-logout { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 9px; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 500; transition: all .18s; width: 100%; background: none; border: none; }
+    .btn-logout:hover { background: rgba(224,82,82,0.1); color: var(--red); }
+
+    .main { margin-left: 220px; flex: 1; padding: 32px 36px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .topbar h1 { font-size: 22px; font-weight: 700; }
+    .topbar-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 20px; }
+    .stat-label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+    .stat-value { font-size: 32px; font-weight: 700; color: var(--white); }
+    .stat-value span { font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+
+    /* TABLE */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+    .card-header h3 { font-size: 15px; font-weight: 600; }
+    .btn-add { display: flex; align-items: center; gap: 7px; padding: 9px 16px; background: var(--gold); color: #111; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background .2s; }
+    .btn-add:hover { background: var(--gold-light); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 20px; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 14px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .album-name-cell { display: flex; align-items: center; gap: 12px; }
+    .album-thumb-sm { width: 44px; height: 44px; border-radius: 8px; background: var(--surface3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+    .album-thumb-sm img { width: 100%; height: 100%; object-fit: cover; }
+    .album-name-text { font-weight: 600; color: var(--white); }
+    .album-sub-text { font-size: 12px; color: var(--muted); }
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-event { background: rgba(74,144,226,0.15); color: #6fb3f7; }
+    .badge-personal { background: rgba(201,168,76,0.15); color: var(--gold); }
+    .badge-graduation { background: rgba(76,175,125,0.15); color: var(--green); }
+    .action-btns { display: flex; gap: 8px; }
+    .btn-icon { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); transition: all .18s; }
+    .btn-icon:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-icon.del:hover { border-color: var(--red); color: var(--red); }
+    .drive-link { color: var(--gold); font-size: 12px; text-decoration: none; display: flex; align-items: center; gap: 5px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .no-link { color: var(--muted); font-size: 12px; font-style: italic; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(4px); }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 32px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .modal-header h3 { font-size: 18px; font-weight: 700; }
+    .btn-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 22px; line-height: 1; }
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+    .btn-cancel { padding: 10px 20px; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; }
+    .btn-save { padding: 10px 22px; background: var(--gold); border: none; border-radius: 8px; color: #111; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-save:hover { background: var(--gold-light); }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* THUMB UPLOAD */
+    .thumb-upload { width: 100%; height: 130px; border: 2px dashed var(--border); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: border-color .2s; position: relative; overflow: hidden; background: var(--surface2); }
+    .thumb-upload:hover { border-color: var(--gold); }
+    .thumb-upload input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .thumb-upload-label { font-size: 12px; color: var(--muted); pointer-events: none; }
+    .thumb-upload-preview { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .upload-progress { width: 100%; }
+    .upload-bar-wrap { background: var(--surface3); border-radius: 4px; height: 6px; margin-top: 6px; overflow: hidden; display: none; }
+    .upload-bar { height: 100%; background: var(--gold); border-radius: 4px; width: 0%; transition: width .2s; }
+    .upload-status { font-size: 11px; color: var(--muted); margin-top: 4px; display: none; }
+
+    /* SETTINGS */
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 700px; }
+    .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+    .settings-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    .btn-save-settings { padding: 10px 20px; background: var(--gold); border: none; border-radius: 8px; color: #111; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+    .btn-save-settings:hover { background: var(--gold-light); }
+    .btn-save-pay { padding: 10px 20px; background: var(--gold); border: none; border-radius: 8px; color: #111; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+    .btn-save-pay:disabled { opacity: .6; cursor: wait; }
+    .pay-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 11px 14px; color: var(--text); font-size: 14px; outline: none; }
+    .pay-hint { color: var(--muted); font-size: 12px; line-height: 1.6; margin-top: 6px; }
+    .pay-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 13px; }
+    .pay-warn { background: rgba(201,168,76,.12); border: 1px solid var(--gold); border-radius: 10px; padding: 12px 14px; font-size: 12.5px; line-height: 1.7; color: var(--text); margin-bottom: 16px; }
+
+    /* CONFIRM */
+    .confirm-modal { max-width: 360px; }
+    .confirm-modal p { color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.6; }
+    .btn-del-confirm { padding: 10px 22px; background: var(--red); border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 13px 20px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 999; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error { border-color: var(--red); color: var(--red); }
+
+    /* DRAG & DROP */
+    .drag-handle { cursor: grab; color: var(--muted); padding: 0 4px; touch-action: none; }
+    .drag-handle:active { cursor: grabbing; }
+    .album-row-dragging { opacity: 0.4; background: var(--surface2); }
+    .album-row-over { border-top: 2px solid var(--gold) !important; }
+    .drag-hint { font-size: 11px; color: var(--muted); padding: 10px 20px 0; display: flex; align-items: center; gap: 6px; }
+    /* DRAG & DROP */
+    .drag-handle { cursor: grab; color: var(--muted); padding: 0 6px; user-select: none; }
+    .drag-handle:active { cursor: grabbing; }
+    .drag-handle:hover { color: var(--gold); }
+    tr.album-row-dragging td { opacity: 0.4; background: var(--surface2); }
+    tr.album-row-over td { border-top: 2px solid var(--gold) !important; background: rgba(201,168,76,0.06) !important; }
+    .drag-hint { font-size: 11px; color: var(--muted); padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+
+    .tbl-loading { text-align: center; padding: 48px; color: var(--muted); }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 900px) {
+      .sidebar { width: 60px; }
+      .sidebar-logo span, .nav-item span, .sidebar-footer span { display: none; }
+      .main { margin-left: 60px; padding: 20px 16px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .settings-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span>Rams Gallery</span>
+    </div>
+    <h2>Admin Login</h2>
+    <p>Masuk untuk mengelola album & konten website.</p>
+    <div class="field">
+      <label>EMAIL ADMIN</label>
+      <input type="email" id="loginEmail" placeholder="admin@email.com"/>
+    </div>
+    <div class="field">
+      <label>PASSWORD</label>
+      <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()"/>
+    </div>
+    <div class="login-err" id="loginErr">Email atau password salah.</div>
+    <button class="btn-full" onclick="doLogin()">Masuk</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="adminScreen">
+  <div class="admin-wrap">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span id="adminBrandName">Rams Gallery</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" onclick="showPanel('dashboard')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item" onclick="showPanel('albums')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M8 5V3h8v2"/></svg>
+          <span>Album</span>
+        </div>
+        <div class="nav-item" onclick="showPanel('settings')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Pengaturan</span>
+        </div>
+        <div class="nav-item" onclick="showPanel('payment')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <span>Pembayaran</span>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn-logout" onclick="doLogout()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="topbar">
+          <div><h1>Dashboard</h1><div class="topbar-sub">Selamat datang kembali 👋</div></div>
+          <a href="../index.html" target="_blank" style="display:flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;text-decoration:none;border:1px solid var(--border);padding:8px 14px;border-radius:8px;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Lihat Website
+          </a>
+        </div>
+        <div class="stats-grid" id="statsGrid"><div class="stat-card"><div class="stat-label">Loading...</div><div class="stat-value"><div class="spinner"></div></div></div></div>
+        <div class="card">
+          <div class="card-header"><h3>Album Terbaru</h3><button class="btn-add" onclick="showPanel('albums')">Kelola Album</button></div>
+          <table id="dashTable"><tbody><tr><td class="tbl-loading"><div class="spinner"></div></td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- ALBUMS -->
+      <div class="panel" id="panel-albums">
+        <div class="topbar">
+          <div><h1>Kelola Album</h1><div class="topbar-sub">Tambah, edit, atau hapus album foto.</div></div>
+          <button class="btn-add" onclick="openModal()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Tambah Album
+          </button>
+        </div>
+        <div class="card">
+          <table id="albumTable"><tbody><tr><td class="tbl-loading"><div class="spinner"></div></td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="panel" id="panel-settings">
+        <div class="topbar"><div><h1>Pengaturan</h1><div class="topbar-sub">Kelola informasi kontak.</div></div></div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h4>Informasi Brand & Kontak</h4>
+            <div class="field"><label>NAMA BRAND / WEBSITE</label><input type="text" id="settingBrand" placeholder="contoh: Rams Gallery"/></div>
+            <div class="field"><label>USERNAME INSTAGRAM</label><input type="text" id="settingIG" placeholder="@username_kamu"/></div>
+            <div class="field"><label>EMAIL</label><input type="email" id="settingEmail" placeholder="email_kamu@gmail.com"/></div>
+            <div class="field">
+              <label>HERO BACKGROUND (foto di halaman utama)</label>
+              <div class="thumb-upload" id="heroBgUploadArea">
+                <input type="file" accept="image/*" id="heroBgFileInput" onchange="handleHeroBgSelect(this)"/>
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span id="heroBgUploadLabel">Klik untuk upload foto background</span>
+                <img class="thumb-upload-preview" id="heroBgPreview"/>
+              </div>
+              <div class="upload-progress">
+                <div class="upload-bar-wrap" id="heroBgBarWrap"><div class="upload-bar" id="heroBgBar"></div></div>
+                <div class="upload-status" id="heroBgStatus"></div>
+              </div>
+            </div>
+            <button class="btn-save-settings" onclick="saveSettings()">Simpan Perubahan</button>
+          </div>
+          <div class="settings-card">
+            <h4>Info Akun Admin</h4>
+            <p style="color:var(--muted);font-size:13px;line-height:1.7;">Password & email admin dikelola langsung di <strong style="color:var(--text);">Firebase Console</strong> → Authentication → Users.<br><br>Untuk keamanan, ganti password dari sana.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PEMBAYARAN -->
+      <div class="panel" id="panel-payment">
+        <div class="topbar"><div><h1>Pembayaran</h1><div class="topbar-sub">Atur harga download foto. Perubahan aktif dalam ±30 detik tanpa deploy ulang.</div></div></div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h4>Aturan Harga (semua album)</h4>
+            <label class="pay-row"><input type="checkbox" id="payEnabled" checked/> Aktifkan pembayaran (kalau mati, semua foto gratis)</label>
+            <div class="field"><label>HARGA PER FOTO (Rp)</label><input class="pay-input" type="number" id="payPrice" min="0" placeholder="contoh: 2000"/></div>
+            <div class="field"><label>FOTO GRATIS PER PENGUNJUNG PER ALBUM</label><input class="pay-input" type="number" id="payFree" min="0" placeholder="contoh: 5"/></div>
+            <div class="field"><label>BATAS GRATIS PER ALAMAT IP PER ALBUM</label><input class="pay-input" type="number" id="payFreeIp" min="0" placeholder="kosongkan = otomatis 3x foto gratis"/><div class="pay-hint">Anti akal-akalan hapus data browser/incognito. Jangan terlalu kecil: satu WiFi/operator bisa dipakai banyak orang.</div></div>
+            <button class="btn-save-pay" id="btnSavePay" onclick="savePayment()">Simpan Pengaturan</button>
+          </div>
+          <div class="settings-card">
+            <h4>Mode Midtrans</h4>
+            <div class="field"><label>MODE</label>
+              <select class="pay-input" id="payMode" style="cursor:pointer;">
+                <option value="sandbox">Sandbox (uji coba, uang palsu)</option>
+                <option value="production">Production (uang asli)</option>
+              </select>
+            </div>
+            <div class="pay-warn">⚠️ Pindah ke <strong>Production</strong> hanya setelah akun Midtrans lu aktif dan <strong>Server Key + Client Key Production</strong> sudah disimpan di Worker (<code>wrangler secret put MIDTRANS_SERVER_KEY_PROD</code> dan <code>MIDTRANS_CLIENT_KEY_PROD</code>). Kalau belum, pembayaran akan gagal.</div>
+            <p class="pay-hint">🔒 Server Key & private key Google sengaja <strong>tidak</strong> bisa diisi dari sini. Kunci rahasia disimpan di Cloudflare supaya tidak bisa bocor lewat web/admin.<br><br>Harga khusus atau gratis untuk satu album: buka menu Album → Edit → bagian <em>Pembayaran Album Ini</em>.</p>
+          </div>
+          <div class="settings-card" style="grid-column:1/-1;">
+            <h4>Tampilan Info Harga di Website (untuk reviewer Midtrans)</h4>
+            <label class="pay-row"><input type="checkbox" id="payShowInfo"/> Tampilkan bagian "Harga &amp; Cara Beli" di website (menu Harga + section di halaman depan)</label>
+            <p class="pay-hint" style="margin:-8px 0 16px;">Nyalakan saat pendaftaran/review Midtrans agar reviewer melihat harga, cara beli, kebijakan, dan kontak. Bisa dimatikan lagi kapan saja. Harga yang tampil otomatis mengikuti "Harga per foto" di atas.</p>
+            <div class="field"><label>TENTANG LAYANAN (kosongkan = teks bawaan)</label><textarea class="pay-input" id="payBizDesc" rows="3" placeholder="Jelaskan jasa/produk yang kamu jual"></textarea></div>
+            <div class="field"><label>KEBIJAKAN PENGEMBALIAN (kosongkan = teks bawaan)</label><textarea class="pay-input" id="payRefund" rows="3" placeholder="Contoh: produk digital tidak dapat dikembalikan setelah diunduh, kecuali..."></textarea></div>
+            <div class="field"><label>NOMOR WHATSAPP (opsional)</label><input class="pay-input" type="text" id="payWa" placeholder="contoh: 081234567890"/></div>
+            <p class="pay-hint">Instagram &amp; email diambil dari menu Pengaturan.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL ALBUM -->
+<div class="modal-overlay" id="albumModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Tambah Album</h3>
+      <button class="btn-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="field">
+      <label>THUMBNAIL ALBUM</label>
+      <div class="thumb-upload" id="thumbUploadArea">
+        <input type="file" accept="image/*" id="thumbFileInput" onchange="handleThumbSelect(this)"/>
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span class="thumb-upload-label">Klik untuk upload foto thumbnail</span>
+        <img class="thumb-upload-preview" id="thumbPreview"/>
+      </div>
+      <div class="upload-progress">
+        <div class="upload-bar-wrap" id="uploadBarWrap"><div class="upload-bar" id="uploadBar"></div></div>
+        <div class="upload-status" id="uploadStatus"></div>
+      </div>
+    </div>
+    <div class="field"><label>NAMA ALBUM</label><input type="text" id="modalName" placeholder="contoh: Graduation 2026"/></div>
+    <div class="field"><label>KATEGORI</label><input type="text" id="modalKategori" placeholder="contoh: Event / Personal Shoot / Batch 2026"/></div>
+    <div class="field"><label>TANGGAL</label><input type="text" id="modalTanggal" placeholder="contoh: Mei 2026"/></div>
+    <div class="field"><label>JUMLAH FOTO</label><input type="number" id="modalFoto" placeholder="contoh: 248" min="0"/></div>
+    <div class="field"><label>LINK GOOGLE DRIVE</label><input type="url" id="modalDrive" placeholder="https://drive.google.com/drive/folders/..."/></div>
+    <div class="field">
+      <label>DURASI TERSEDIA (sebelum otomatis dihapus)</label>
+      <select id="modalDuration" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+        <option value="7">7 hari</option>
+        <option value="14" selected>14 hari (default)</option>
+        <option value="30">30 hari</option>
+        <option value="60">60 hari</option>
+        <option value="0">Tidak pernah dihapus</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>PEMBAYARAN ALBUM INI</label>
+      <select id="modalPayMode" onchange="document.getElementById('modalPayPriceWrap').style.display = this.value === 'custom' ? 'block' : 'none'" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+        <option value="default">Ikuti pengaturan global</option>
+        <option value="free">Gratis semua foto</option>
+        <option value="custom">Harga khusus per foto</option>
+      </select>
+      <div id="modalPayPriceWrap" style="display:none;margin-top:10px;"><input type="number" id="modalPayPrice" min="0" placeholder="Harga per foto (Rp)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-save" id="btnSave" onclick="saveAlbum()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRM DELETE -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="modal-header"><h3>Hapus Album?</h3><button class="btn-close" onclick="closeConfirm()">×</button></div>
+    <p>Album <strong id="confirmName"></strong> akan dihapus secara permanen termasuk thumbnail-nya.</p>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeConfirm()">Batal</button>
+      <button class="btn-del-confirm" onclick="confirmDelete()">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAgIIyi08oxaHMnqJHiSEDStxHNMTzZ5oo",
+    authDomain: "ramsgallery-c82a3.firebaseapp.com",
+    projectId: "ramsgallery-c82a3",
+    storageBucket: "ramsgallery-c82a3.firebasestorage.app",
+    messagingSenderId: "1072242336231",
+    appId: "1:1072242336231:web:b7bbb2dca3331ff09b1d42",
+    measurementId: "G-C7MS9Q9RBD"
+  };
+
+  const CLOUDINARY_CLOUD_NAME = 'dwhul3vvj';
+  const CLOUDINARY_UPLOAD_PRESET = 'rams_gallery';
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ── STATE ──
+  let allAlbums = [];
+  let editingId = null;
+  let deleteId = null;
+  let deleteThumbPath = null;
+  let selectedFile = null;
+  let currentThumbUrl = '';
+  let unsubAlbums = null;
+  let unsubSettings = null;
+
+  // ── AUTH ──
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminScreen').style.display = 'block';
+      startListeners();
+    } else {
+      document.getElementById('adminScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+      if (unsubAlbums) unsubAlbums();
+      if (unsubSettings) unsubSettings();
+    }
+  });
+
+  window.doLogin = async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    const err = document.getElementById('loginErr');
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      err.style.display = 'none';
+    } catch (e) {
+      err.style.display = 'block';
+    }
+  };
+
+  window.doLogout = () => signOut(auth);
+
+  window.moveAlbum = async (id, dir) => {
+    const idx = allAlbums.findIndex(a => a.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= allAlbums.length) return;
+
+    // Swap in local array
+    [allAlbums[idx], allAlbums[newIdx]] = [allAlbums[newIdx], allAlbums[idx]];
+
+    // Re-render immediately (optimistic)
+    renderAlbumTable();
+
+    // Save new order to Firestore
+    try {
+      const { writeBatch, doc: fsDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      const batch = writeBatch(db);
+      allAlbums.forEach((a, i) => {
+        batch.update(fsDoc(db, 'albums', a.id), { order: i });
+      });
+      await batch.commit();
+      showToast('Urutan disimpan!', 'success');
+    } catch(e) {
+      showToast('Gagal menyimpan: ' + e.message, 'error');
+    }
+  };
+
+  // ── REALTIME LISTENERS ──
+  function startListeners() {
+    unsubAlbums = onSnapshot(collection(db, 'albums'), snap => {
+      allAlbums = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => {
+          const oa = a.order !== undefined ? a.order : 99999;
+          const ob = b.order !== undefined ? b.order : 99999;
+          if (oa !== ob) return oa - ob;
+          return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
+        });
+      renderDashboard();
+      renderAlbumTable();
+    });
+    unsubSettings = onSnapshot(doc(db, 'settings', 'main'), snap => {
+      if (snap.exists()) {
+        const d = snap.data();
+        document.getElementById('settingIG').value = d.ig || '';
+        document.getElementById('settingEmail').value = d.email || '';
+        document.getElementById('settingBrand').value = d.brand || '';
+        const brand = d.brand || 'Rams Gallery';
+        document.getElementById('adminBrandName').textContent = brand;
+        document.title = brand + ' — Admin';
+        currentHeroBgUrl = d.heroBgUrl || '';
+        if (d.heroBgUrl) {
+          const preview = document.getElementById('heroBgPreview');
+          preview.src = d.heroBgUrl;
+          preview.style.display = 'block';
+          document.getElementById('heroBgUploadLabel').style.display = 'none';
+          document.querySelector('#heroBgUploadArea svg').style.display = 'none';
+        }
+      }
+    });
+  }
+
+  // ── PEMBAYARAN ──
+  onSnapshot(doc(db, 'settings', 'payment'), snap => {
+    const d = snap.exists() ? snap.data() : {};
+    document.getElementById('payEnabled').checked = d.enabled !== false;
+    document.getElementById('payPrice').value = d.price ?? '';
+    document.getElementById('payFree').value = d.free ?? '';
+    document.getElementById('payFreeIp').value = d.freeIp ?? '';
+    document.getElementById('payMode').value = d.mode || 'sandbox';
+    document.getElementById('payShowInfo').checked = d.pricingShow === true;
+    document.getElementById('payBizDesc').value = d.bizDesc || '';
+    document.getElementById('payRefund').value = d.refundPolicy || '';
+    document.getElementById('payWa').value = d.waNumber || '';
+  });
+  window.savePayment = async () => {
+    const btn = document.getElementById('btnSavePay');
+    const n = id => { const v = document.getElementById(id).value; return v === '' ? null : Math.max(0, parseInt(v)); };
+    const mode = document.getElementById('payMode').value;
+    if (mode === 'production' && !confirm('Mode PRODUCTION memakai uang asli. Pastikan key Production sudah disimpan di Worker. Lanjut?')) return;
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    try {
+      await setDoc(doc(db, 'settings', 'payment'), {
+        enabled: document.getElementById('payEnabled').checked,
+        price: n('payPrice'), free: n('payFree'), freeIp: n('payFreeIp'), mode,
+        pricingShow: document.getElementById('payShowInfo').checked,
+        bizDesc: document.getElementById('payBizDesc').value.trim(),
+        refundPolicy: document.getElementById('payRefund').value.trim(),
+        waNumber: document.getElementById('payWa').value.trim(),
+      }, { merge: true });
+      showToast('Pengaturan pembayaran disimpan! Aktif dalam ±30 detik.', 'success');
+    } catch (e) { showToast('Gagal menyimpan: ' + e.message, 'error'); }
+    btn.disabled = false; btn.textContent = 'Simpan Pengaturan';
+  };
+
+  // ── PANELS ──
+  window.showPanel = (name) => {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    const idx = ['dashboard','albums','settings','payment'].indexOf(name);
+    document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
+  };
+
+  // ── DASHBOARD ──
+  function renderDashboard() {
+    const totalFoto = allAlbums.reduce((s,a) => s + Number(a.foto||0), 0);
+    const withDrive = allAlbums.filter(a => a.drive).length;
+    const totalClicks = allAlbums.reduce((s,a) => s + Number(a.clicks||0), 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Album</div><div class="stat-value">${allAlbums.length}<span>album</span></div></div>
+      <div class="stat-card"><div class="stat-label">Total Foto</div><div class="stat-value">${totalFoto.toLocaleString('id')}<span>foto</span></div></div>
+      <div class="stat-card"><div class="stat-label">Total Klik Drive</div><div class="stat-value">${totalClicks.toLocaleString('id')}<span>klik</span></div></div>
+      <div class="stat-card"><div class="stat-label">Belum Ada Link</div><div class="stat-value">${allAlbums.length - withDrive}<span>album</span></div></div>`;
+    const rows = allAlbums.slice(0,5).map(a => albumRow(a, true, 0)).join('');
+    document.getElementById('dashTable').innerHTML = `<thead><tr><th>Album</th><th>Tanggal</th><th>Foto</th><th>Klik</th><th>Aktif</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="tbl-loading">Belum ada album.</td></tr>'}</tbody>`;
+  }
+
+  // ── ALBUM TABLE ──
+  function renderAlbumTable() {
+    document.querySelector('.drag-hint')?.remove();
+    const rows = allAlbums.map((a, i) => albumRow(a, false, i)).join('');
+    document.getElementById('albumTable').innerHTML = `
+      <thead><tr><th style="width:64px;">Urutan</th><th>Album</th><th>Kategori</th><th>Tanggal</th><th>Foto</th><th>Aktif</th><th>Drive</th><th>Aksi</th></tr></thead>
+      <tbody id="albumTbody">${rows||'<tr><td colspan="8" class="tbl-loading">Belum ada album.</td></tr>'}</tbody>`;
+    autoDeleteExpired();
+  }
+
+  function daysLeft(createdAt, durationDays) {
+    if (!createdAt?.seconds) return null;
+    const dur = (durationDays === undefined || durationDays === null) ? 14 : durationDays;
+    if (dur === 0) return Infinity; // never expires
+    const created = createdAt.seconds * 1000;
+    const expires = created + (dur * 24 * 60 * 60 * 1000);
+    const diff = expires - Date.now();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }
+
+  async function autoDeleteExpired() {
+    const expired = allAlbums.filter(a => {
+      const d = daysLeft(a.createdAt, a.durationDays);
+      return d !== null && d !== Infinity && d <= 0;
+    });
+    for (const a of expired) {
+      try {
+        await deleteDoc(doc(db, 'albums', a.id));
+        if (a.thumbPath) {
+          try { await deleteObject(ref(storage, a.thumbPath)); } catch(_) {}
+        }
+        console.log('Auto-deleted expired album:', a.name);
+      } catch(e) { console.error(e); }
+    }
+  }
+
+  function albumRow(a, minimal, idx) {
+    const thumb = a.thumbUrl
+      ? `<div class="album-thumb-sm"><img src="${a.thumbUrl}" loading="lazy"/></div>`
+      : `<div class="album-thumb-sm"><svg width="18" height="18" fill="none" stroke="#444" stroke-width="1.5" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
+    const driveCell = a.drive
+      ? `<a href="${a.drive}" target="_blank" class="drive-link"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M4.5 20.5L8 14h13l-3.5 6.5z" fill="#0F9D58"/><path d="M1.5 14.5L8 3h5.5L9 14.5z" fill="#4285F4"/><path d="M13.5 3L21 14.5H8L13.5 3z" fill="#FFBB00"/></svg>${a.drive.replace('https://','').substring(0,28)}…</a>`
+      : `<span class="no-link">Belum ada link</span>`;
+    const orderBtns = minimal ? '' : `<td>
+      <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
+        <button class="btn-icon" onclick="moveAlbum('${a.id}',-1)" title="Naik" ${idx===0?'disabled style="opacity:0.3"':''}>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <span style="font-size:10px;color:var(--muted);font-weight:600;">${(idx+1)}</span>
+        <button class="btn-icon" onclick="moveAlbum('${a.id}',1)" title="Turun" ${idx===allAlbums.length-1?'disabled style="opacity:0.3"':''}>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+    </td>`;
+    const d = daysLeft(a.createdAt, a.durationDays);
+    const ttlCell = minimal
+      ? `<td><span class="badge ${d===null||d===Infinity?'':d<=3?'':'badge-graduation'}" style="${d===Infinity?'background:rgba(106,170,255,0.15);color:#6aaaff;':d!==null&&d<=3?'background:rgba(224,82,82,0.15);color:#e05252;':d!==null&&d<=7?'background:rgba(255,165,0,0.15);color:orange;':''}">${d===null?'-':d===Infinity?'∞':d<=0?'Kadaluarsa':d+' hari'}</span></td>`
+      : (() => {
+        if (d === null) return `<td><span class="no-link">-</span></td>`;
+        if (d === Infinity) return `<td><span class="badge" style="background:rgba(106,170,255,0.15);color:#6aaaff;">∞ Tidak dihapus</span></td>`;
+        if (d <= 0) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">Kadaluarsa</span></td>`;
+        if (d <= 3) return `<td><span class="badge" style="background:rgba(224,82,82,0.15);color:#e05252;">⚠️ ${d} hari lagi</span></td>`;
+        if (d <= 7) return `<td><span class="badge" style="background:rgba(255,165,0,0.15);color:orange;">${d} hari lagi</span></td>`;
+        return `<td><span class="badge badge-graduation">${d} hari lagi</span></td>`;
+      })();
+    const clicksCell = `<td style="font-weight:600;color:var(--gold);">${Number(a.clicks||0).toLocaleString('id')} <span style="color:var(--muted);font-weight:400;font-size:11px;">klik</span></td>`;
+    const actions = minimal ? '' : `<td><div class="action-btns">
+      <button class="btn-icon" onclick="openModal('${a.id}')" title="Edit"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="btn-icon del" onclick="askDelete('${a.id}','${a.thumbPath||''}')" title="Hapus"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+    </div></td>`;
+    return `<tr data-id="${a.id}">
+      ${orderBtns}
+      <td><div class="album-name-cell">${thumb}<div><div class="album-name-text">${a.name}</div><div class="album-sub-text">${a.foto||0} Foto</div></div></div></td>
+      ${minimal ? '' : `<td><span class="badge ${badgeClass(a.kategori||'')}">${a.kategori||'-'}</span></td>`}
+      <td style="color:var(--muted);font-size:13px;">${a.tanggal||'-'}</td>
+      <td style="font-weight:600;">${Number(a.foto||0).toLocaleString('id')}</td>
+      ${clicksCell}
+      ${ttlCell}
+      ${minimal ? '' : `<td>${driveCell}</td>`}
+      ${actions}
+    </tr>`;
+  }
+
+  function badgeClass(k) {
+    if (/event/i.test(k)) return 'badge-event';
+    if (/personal|shoot/i.test(k)) return 'badge-personal';
+    return 'badge-graduation';
+  }
+
+  // ── MODAL ──
+  window.openModal = async (id = null) => {
+    editingId = id;
+    selectedFile = null;
+    currentThumbUrl = '';
+    resetThumbUI();
+    clearUploadProgress();
+
+    if (id) {
+      document.getElementById('modalTitle').textContent = 'Edit Album';
+      const a = allAlbums.find(x => x.id === id);
+      if (a) {
+        document.getElementById('modalName').value = a.name || '';
+        document.getElementById('modalKategori').value = a.kategori || '';
+        document.getElementById('modalTanggal').value = a.tanggal || '';
+        document.getElementById('modalFoto').value = a.foto || '';
+        document.getElementById('modalDrive').value = a.drive || '';
+        document.getElementById('modalDuration').value = (a.durationDays !== undefined) ? a.durationDays : 14;
+        document.getElementById('modalPayMode').value = a.payMode || 'default';
+        document.getElementById('modalPayPrice').value = a.payPrice ?? '';
+        document.getElementById('modalPayPriceWrap').style.display = a.payMode === 'custom' ? 'block' : 'none';
+        currentThumbUrl = a.thumbUrl || '';
+        if (a.thumbUrl) {
+          document.getElementById('thumbPreview').src = a.thumbUrl;
+          document.getElementById('thumbPreview').style.display = 'block';
+          document.querySelector('.thumb-upload-label').style.display = 'none';
+          document.querySelector('#thumbUploadArea svg').style.display = 'none';
+        }
+      }
+    } else {
+      document.getElementById('modalTitle').textContent = 'Tambah Album';
+      ['modalName','modalKategori','modalTanggal','modalDrive'].forEach(i => document.getElementById(i).value = '');
+      document.getElementById('modalFoto').value = '';
+      document.getElementById('modalDuration').value = '14';
+      document.getElementById('modalPayMode').value = 'default';
+      document.getElementById('modalPayPrice').value = '';
+      document.getElementById('modalPayPriceWrap').style.display = 'none';
+    }
+    document.getElementById('albumModal').classList.add('open');
+  };
+
+  window.closeModal = () => {
+    document.getElementById('albumModal').classList.remove('open');
+    document.getElementById('thumbFileInput').value = '';
+  };
+
+  window.handleThumbSelect = (input) => {
+    if (!input.files[0]) return;
+    selectedFile = input.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('thumbPreview').src = e.target.result;
+      document.getElementById('thumbPreview').style.display = 'block';
+      document.querySelector('.thumb-upload-label').style.display = 'none';
+      document.querySelector('#thumbUploadArea svg').style.display = 'none';
+    };
+    reader.readAsDataURL(selectedFile);
+  };
+
+  // Compress image before upload (max 1200px, quality 0.8, max ~2MB)
+  function compressImage(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1200;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.82);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resetThumbUI() {
+    document.getElementById('thumbPreview').style.display = 'none';
+    document.getElementById('thumbPreview').src = '';
+    document.querySelector('.thumb-upload-label').style.display = '';
+    document.querySelector('#thumbUploadArea svg').style.display = '';
+    document.getElementById('thumbFileInput').value = '';
+  }
+
+  function clearUploadProgress() {
+    document.getElementById('uploadBarWrap').style.display = 'none';
+    document.getElementById('uploadStatus').style.display = 'none';
+    document.getElementById('uploadBar').style.width = '0%';
+  }
+
+  window.saveAlbum = async () => {
+    const name = document.getElementById('modalName').value.trim();
+    if (!name) { showToast('Nama album wajib diisi.', 'error'); return; }
+
+    const btn = document.getElementById('btnSave');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    try {
+      let thumbUrl = currentThumbUrl;
+
+      // Upload thumbnail ke Cloudinary jika ada file baru
+      if (selectedFile) {
+        document.getElementById('uploadBarWrap').style.display = 'block';
+        document.getElementById('uploadStatus').style.display = 'block';
+        document.getElementById('uploadStatus').textContent = 'Mengompresi gambar...';
+
+        const compressed = await compressImage(selectedFile);
+
+        const formData = new FormData();
+        formData.append('file', compressed, 'thumbnail.jpg');
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('folder', 'rams-gallery');
+
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const pct = Math.round(e.loaded / e.total * 100);
+              document.getElementById('uploadBar').style.width = pct + '%';
+              document.getElementById('uploadStatus').textContent = `Mengupload thumbnail... ${pct}%`;
+            }
+          };
+          xhr.onload = () => {
+            if (xhr.status === 200) {
+              const res = JSON.parse(xhr.responseText);
+              thumbUrl = res.secure_url;
+              document.getElementById('uploadStatus').textContent = 'Upload selesai ✓';
+              resolve();
+            } else {
+              reject(new Error('Upload gagal: ' + xhr.responseText));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Koneksi gagal'));
+          xhr.send(formData);
+        });
+      }
+
+      const data = {
+        name,
+        kategori: document.getElementById('modalKategori').value.trim(),
+        tanggal: document.getElementById('modalTanggal').value.trim(),
+        foto: parseInt(document.getElementById('modalFoto').value) || 0,
+        drive: document.getElementById('modalDrive').value.trim(),
+        durationDays: parseInt(document.getElementById('modalDuration').value),
+        payMode: document.getElementById('modalPayMode').value,
+        payPrice: document.getElementById('modalPayMode').value === 'custom' ? (parseInt(document.getElementById('modalPayPrice').value) || 0) : null,
+        thumbUrl,
+      };
+
+      if (editingId) {
+        await updateDoc(doc(db, 'albums', editingId), data);
+        showToast('Album berhasil diperbarui!', 'success');
+      } else {
+        await addDoc(collection(db, 'albums'), { ...data, createdAt: serverTimestamp() });
+        showToast('Album berhasil ditambahkan!', 'success');
+      }
+
+      closeModal();
+    } catch (e) {
+      console.error(e);
+      showToast('Gagal menyimpan: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Simpan';
+    }
+  };
+
+  // ── DELETE ──
+  window.askDelete = (id, thumbPath) => {
+    deleteId = id;
+    deleteThumbPath = thumbPath;
+    const a = allAlbums.find(x => x.id === id);
+    document.getElementById('confirmName').textContent = a?.name || id;
+    document.getElementById('confirmModal').classList.add('open');
+  };
+
+  window.closeConfirm = () => document.getElementById('confirmModal').classList.remove('open');
+
+  window.confirmDelete = async () => {
+    try {
+      await deleteDoc(doc(db, 'albums', deleteId));
+      if (deleteThumbPath) {
+        try { await deleteObject(ref(storage, deleteThumbPath)); } catch(_) {}
+      }
+      showToast('Album berhasil dihapus.', 'success');
+    } catch(e) {
+      showToast('Gagal menghapus: ' + e.message, 'error');
+    }
+    closeConfirm();
+  };
+
+  // ── SETTINGS ──
+  let selectedHeroBgFile = null;
+  let currentHeroBgUrl = '';
+
+  window.handleHeroBgSelect = (input) => {
+    if (!input.files[0]) return;
+    selectedHeroBgFile = input.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+      const preview = document.getElementById('heroBgPreview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      document.getElementById('heroBgUploadLabel').style.display = 'none';
+      document.querySelector('#heroBgUploadArea svg').style.display = 'none';
+    };
+    reader.readAsDataURL(selectedHeroBgFile);
+  };
+
+  window.saveSettings = async () => {
+    const btn = document.querySelector('.btn-save-settings');
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+    try {
+      let heroBgUrl = currentHeroBgUrl;
+
+      if (selectedHeroBgFile) {
+        document.getElementById('heroBgBarWrap').style.display = 'block';
+        document.getElementById('heroBgStatus').style.display = 'block';
+        document.getElementById('heroBgStatus').textContent = 'Mengompresi gambar...';
+        const compressed = await compressImage(selectedHeroBgFile);
+        document.getElementById('heroBgStatus').textContent = 'Mengupload background...';
+        const fd = new FormData();
+        fd.append('file', compressed, 'hero-bg.jpg');
+        fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        fd.append('folder', 'rams-gallery');
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          const pct = Math.round(e.loaded/e.total*100);
+          document.getElementById('heroBgBar').style.width = pct + '%';
+          document.getElementById('heroBgStatus').textContent = `Mengupload... ${pct}%`;
+        };
+        heroBgUrl = await new Promise((res, rej) => {
+          xhr.onload = () => {
+            const r = JSON.parse(xhr.responseText);
+            if (r.secure_url) { document.getElementById('heroBgStatus').textContent = 'Upload selesai ✓'; res(r.secure_url); }
+            else rej(new Error(r.error?.message || 'Upload gagal'));
+          };
+          xhr.onerror = () => rej(new Error('Network error'));
+          xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
+          xhr.send(fd);
+        });
+        selectedHeroBgFile = null;
+        currentHeroBgUrl = heroBgUrl;
+      }
+
+      await setDoc(doc(db, 'settings', 'main'), {
+        brand: document.getElementById('settingBrand').value.trim(),
+        ig: document.getElementById('settingIG').value.trim(),
+        email: document.getElementById('settingEmail').value.trim(),
+        heroBgUrl,
+      }, { merge: true });
+      showToast('Pengaturan disimpan!', 'success');
+    } catch(e) {
+      showToast('Gagal menyimpan: ' + e.message, 'error');
+    } finally {
+      btn.textContent = 'Simpan Perubahan';
+      btn.disabled = false;
+      document.getElementById('heroBgBarWrap').style.display = 'none';
+      document.getElementById('heroBgStatus').style.display = 'none';
+    }
+  };
+
+  // ── TOAST ──
+  window.showToast = (msg, type = 'success') => {
+    const t = document.getElementById('toast');
+    t.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
+    t.className = 'toast ' + type + ' show';
+    setTimeout(() => t.classList.remove('show'), 3500);
+  };
+
+  // Close modal on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) { window.closeModal(); window.closeConfirm(); }
+    });
+  });
+</script>
+</body>
+</html>
