@@ -1,0 +1,16 @@
+name = "rams-gallery"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "ramsgallery-c82a3"   # harga & pengaturan dibaca dari Firestore (diatur di admin)
+# Nilai cadangan, dipakai HANYA kalau Firestore tidak terbaca:
+MIDTRANS_PROD = "false"
+PRICE_PER_PHOTO = "2000"
+FREE_PER_ALBUM = "5"
+FREE_PER_IP = "15"
+ALLOWED_ORIGIN = "https://GANTI-DOMAIN-KAMU.com"
+
+[[kv_namespaces]]
+binding = "ORDERS"
+id = "GANTI_KV_ID"               # hasil: npx wrangler kv namespace create ORDERS
