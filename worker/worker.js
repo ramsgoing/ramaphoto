@@ -162,7 +162,7 @@ export default {
         const id = p.slice(6), o = await env.ORDERS.get('order:' + (url.searchParams.get('order') || ''), 'json');
         if (!o || o.status !== 'paid' || !o.ids.includes(id)) return json({ error: 'tidak diizinkan' }, 403);
         const r = await g(env, `https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
-        if (!r.ok) return json({ error: 'file gagal diambil' }, 502);
+        if (!r.ok) { const d = await r.json().catch(() => ({})); return json({ error: 'file gagal diambil dari Drive (' + r.status + '): ' + (d.error?.message || d.error?.errors?.[0]?.reason || 'tanpa detail') }, 502); }
         return new Response(r.body, { headers: { ...cors, 'content-type': r.headers.get('content-type') || 'application/octet-stream' } });
       }
       return json({ error: 'not found' }, 404);
