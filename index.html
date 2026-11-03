@@ -851,7 +851,7 @@
   };
 
   // ── GALLERY + PEMBAYARAN (lewat Cloudflare Worker, lihat folder worker/) ──
-  const WORKER_URL = 'GANTI_WORKER_URL'; // contoh: https://rams-gallery.namakamu.workers.dev
+  const WORKER_URL = 'https://rams-gallery.ramsgallery.workers.dev'; // contoh: https://rams-gallery.namakamu.workers.dev
   const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
   const W = p => WORKER_URL.replace(/\/$/, '') + p;
