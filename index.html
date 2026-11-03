@@ -851,7 +851,7 @@
   };
 
   // ── GALLERY + PEMBAYARAN (lewat Cloudflare Worker, lihat folder worker/) ──
-  const WORKER_URL = 'https://rams-gallery.ramsgallery.workers.dev'; // contoh: https://rams-gallery.namakamu.workers.dev
+  const WORKER_URL = 'GANTI_WORKER_URL'; // contoh: https://rams-gallery.namakamu.workers.dev
   const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
   const W = p => WORKER_URL.replace(/\/$/, '') + p;
@@ -929,17 +929,21 @@
     throw new Error('Pembayaran belum terkonfirmasi. Kalau sudah bayar, hubungi admin dengan Order ID: ' + id);
   }
   async function fetchAll(list, oid) {
-    const blobOf = async f => { const r = await fetch(W(`/file/${f.id}?order=${oid}`)); if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); };
+    const blobOf = async f => {
+      let r; try { r = await fetch(W(`/file/${f.id}?order=${oid}`)); } catch (e) { throw new Error('tidak bisa menghubungi server (cek ALLOWED_ORIGIN di Worker)'); }
+      if (!r.ok) { let m = ''; try { m = (await r.json()).error; } catch (e) {} throw new Error('HTTP ' + r.status + (m ? ': ' + m : '')); }
+      return r.blob();
+    };
     if (list.length === 1) return saveBlob(await blobOf(list[0]), list[0].name);
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-    const zip = new JSZip(), used = {}, queue = list.slice(); let done = 0, failed = 0;
+    const zip = new JSZip(), used = {}, queue = list.slice(); let done = 0, failed = 0, firstErr = '';
     const worker = async () => {
       while (queue.length) {
         const f = queue.shift();
         try {
           let n = f.name; if (used[n]) { const k = n.lastIndexOf('.'); n = k > 0 ? n.slice(0, k) + '_' + f.id.slice(0, 4) + n.slice(k) : n + '_' + f.id.slice(0, 4); }
           used[n] = 1; zip.file(n, await blobOf(f));
-        } catch (e) { failed++; }
+        } catch (e) { failed++; firstErr = firstErr || e.message; }
         done++; $('galProg').style.width = (done / list.length * 100) + '%';
         $('galDlTxt').textContent = `Mengunduh ${done}/${list.length}…`;
       }
@@ -947,7 +951,7 @@
     await Promise.all([worker(), worker(), worker()]);
     $('galDlTxt').textContent = 'Membuat ZIP…';
     saveBlob(await zip.generateAsync({ type: 'blob', compression: 'STORE' }), (galAlbum.name || 'album').replace(/[^\w\- ]+/g, '').trim() + '.zip');
-    if (failed) alert(`${failed} foto gagal diunduh. Coba download ulang foto tersebut.`);
+    if (failed) alert(`${failed} foto gagal diunduh.\nPenyebab: ${firstErr}\nCoba download ulang foto tersebut.`);
   }
   async function startDownload(list) {
     if (galBusy || !list.length) return;
