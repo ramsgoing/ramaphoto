@@ -303,6 +303,7 @@
     .gal-chk{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#111;font-size:14px;font-weight:700}
     .gal-item.sel .gal-chk{background:var(--gold);border-color:var(--gold)}
     .gal-item.sel{outline:3px solid var(--gold);outline-offset:-3px}
+    .gal-retry{background:rgba(201,168,76,.12);border:1px solid var(--gold);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.7;color:var(--text)}
     .gal-msg{padding:48px 16px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6}
     .gal-prog{height:3px;background:var(--border)} .gal-prog>div{height:100%;width:0;background:var(--gold);transition:width .2s}
     .lb{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center}
@@ -585,7 +586,7 @@
     <button class="gal-btn" onclick="galClose()">✕</button>
   </div>
   <div class="gal-prog"><div id="galProg"></div></div>
-  <div class="gal-body"><div id="galGrid" class="gal-grid"></div><div id="galMsg" class="gal-msg"></div></div>
+  <div class="gal-body"><div id="galRetry" class="gal-retry" style="display:none"></div><div id="galGrid" class="gal-grid"></div><div id="galMsg" class="gal-msg"></div></div>
 </div>
 <div class="lb" id="lb">
   <div class="lb-bar"><span id="lbCount"></span><span><button class="gal-btn gold" onclick="lbDownload()">⬇ Download</button> <button class="gal-btn" onclick="lbClose()">✕</button></span></div>
@@ -851,7 +852,7 @@
   };
 
   // ── GALLERY + PEMBAYARAN (lewat Cloudflare Worker, lihat folder worker/) ──
-  const WORKER_URL = 'https://rams-gallery.ramsgallery.workers.dev'; // contoh: https://rams-gallery.namakamu.workers.dev
+  const WORKER_URL = 'GANTI_WORKER_URL'; // contoh: https://rams-gallery.namakamu.workers.dev
   const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
   const W = p => WORKER_URL.replace(/\/$/, '') + p;
@@ -902,6 +903,7 @@
     if (!a) return;
     trackClick(albumId);
     galAlbum = a; galFiles = []; galSel = new Set(); galFolder = folderId(a.drive);
+    loadPending(galFolder); $('galRetry').style.display = 'none';
     $('galTitle').textContent = a.name; $('galSub').textContent = '';
     $('galGrid').innerHTML = ''; $('galProg').style.width = '0';
     $('galMsg').style.display = ''; $('galMsg').textContent = 'Memuat foto…';
@@ -913,7 +915,7 @@
     $('galMsg').style.display = 'none';
     $('galGrid').innerHTML = galFiles.map((f, i) =>
       `<div class="gal-item" onclick="lbOpen(${i})"><img loading="lazy" src="${thumbUrl(f.id, 400)}" alt="${esc(f.name)}"/><div class="gal-chk" onclick="event.stopPropagation();galToggle(${i})"></div></div>`).join('');
-    galUpdateBar();
+    galUpdateBar(); renderRetry();
   };
   window.galClose = () => { $('gal').classList.remove('open'); document.body.style.overflow = ''; };
   window.galToggle = (i) => { const id = galFiles[i].id; galSel.has(id) ? galSel.delete(id) : galSel.add(id); galUpdateBar(); };
@@ -928,34 +930,79 @@
     }
     throw new Error('Pembayaran belum terkonfirmasi. Kalau sudah bayar, hubungi admin dengan Order ID: ' + id);
   }
-  async function fetchAll(list, oid) {
+  // ── Lanjutkan unduhan yang gagal (tanpa bayar ulang). Order di server berlaku 7 hari. ──
+  const PEND_KEY = 'rams-pending', JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  const pendAll = () => { try { return JSON.parse(localStorage.getItem(PEND_KEY) || '{}'); } catch (e) { return {}; } };
+  const pendSave = o => { try { localStorage.setItem(PEND_KEY, JSON.stringify(o)); } catch (e) {} };
+  let pending = null;
+  function loadPending(folder) {
+    const p = pendAll()[folder];
+    pending = p && Date.now() - p.t < 6.5 * 86400000 ? p : null;
+  }
+  function setPending(orderId, files, err) {
+    const all = pendAll();
+    if (files.length) {
+      const t = pending && pending.orderId === orderId ? pending.t : Date.now();
+      pending = { orderId, folder: galFolder, album: galAlbum.name, files: files.map(f => ({ id: f.id, name: f.name })), err: err || '', t };
+      all[galFolder] = pending;
+    } else { pending = null; delete all[galFolder]; }
+    pendSave(all);
+  }
+  function renderRetry() {
+    const el = $('galRetry');
+    if (!pending || pending.folder !== galFolder || galBusy) { el.style.display = 'none'; return; }
+    const n = pending.files.length;
+    const names = pending.files.slice(0, 5).map(f => esc(f.name)).join(', ') + (n > 5 ? ` dan ${n - 5} lainnya` : '');
+    const quota = /quota|kuota/i.test(pending.err) ? '<br><span style="color:var(--muted)">Ini batas unduhan dari Google. Biasanya pulih dalam beberapa jam sampai 24 jam, coba lagi nanti.</span>' : '';
+    el.innerHTML = `⚠️ <b>${n} foto belum terunduh.</b> Order kamu sudah tercatat, tidak perlu bayar lagi.<br>${names}` +
+      (pending.err ? `<br><span style="color:var(--muted)">Penyebab: ${esc(pending.err)}</span>` : '') + quota +
+      `<br><span style="color:var(--muted)">Order ID: ${esc(pending.orderId)} · berlaku 7 hari</span>` +
+      `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="gal-btn gold" onclick="galRetry()">⬇ Coba unduh lagi</button><button class="gal-btn" onclick="galDiscard()">Tutup</button></div>`;
+    el.style.display = '';
+  }
+
+  async function fetchAll(list, oid, suffix = '') {
     const blobOf = async f => {
       let r; try { r = await fetch(W(`/file/${f.id}?order=${oid}`)); } catch (e) { throw new Error('tidak bisa menghubungi server (cek ALLOWED_ORIGIN di Worker)'); }
       if (!r.ok) { let m = ''; try { m = (await r.json()).error; } catch (e) {} throw new Error('HTTP ' + r.status + (m ? ': ' + m : '')); }
       return r.blob();
     };
-    if (list.length === 1) return saveBlob(await blobOf(list[0]), list[0].name);
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-    const zip = new JSZip(), used = {}, queue = list.slice(); let done = 0, failed = 0, firstErr = '';
+    const failed = []; let firstErr = '';
+    const fail = (f, e) => { failed.push(f); firstErr = firstErr || e.message; };
+    if (list.length === 1) {
+      try { saveBlob(await blobOf(list[0]), list[0].name); } catch (e) { fail(list[0], e); }
+      return { failed, firstErr };
+    }
+    await loadScript(JSZIP);
+    const zip = new JSZip(), used = {}, queue = list.slice(); let done = 0;
     const worker = async () => {
       while (queue.length) {
         const f = queue.shift();
         try {
           let n = f.name; if (used[n]) { const k = n.lastIndexOf('.'); n = k > 0 ? n.slice(0, k) + '_' + f.id.slice(0, 4) + n.slice(k) : n + '_' + f.id.slice(0, 4); }
           used[n] = 1; zip.file(n, await blobOf(f));
-        } catch (e) { failed++; firstErr = firstErr || e.message; }
+        } catch (e) { fail(f, e); }
         done++; $('galProg').style.width = (done / list.length * 100) + '%';
         $('galDlTxt').textContent = `Mengunduh ${done}/${list.length}…`;
       }
     };
-    await Promise.all([worker(), worker(), worker()]);
-    $('galDlTxt').textContent = 'Membuat ZIP…';
-    saveBlob(await zip.generateAsync({ type: 'blob', compression: 'STORE' }), (galAlbum.name || 'album').replace(/[^\w\- ]+/g, '').trim() + '.zip');
-    if (failed) alert(`${failed} foto gagal diunduh.\nPenyebab: ${firstErr}\nCoba download ulang foto tersebut.`);
+    await Promise.all([worker(), worker()]);
+    if (done - failed.length > 0) {
+      $('galDlTxt').textContent = 'Membuat ZIP…';
+      saveBlob(await zip.generateAsync({ type: 'blob', compression: 'STORE' }), (galAlbum.name || 'album').replace(/[^\w\- ]+/g, '').trim() + suffix + '.zip');
+    }
+    return { failed, firstErr };
+  }
+  function afterRun(oid, res) {
+    setPending(oid, res.failed, res.firstErr);
+    if (!res.failed.length) return;
+    if (/tidak diizinkan/.test(res.firstErr)) { setPending(oid, []); alert('Order ini sudah kedaluwarsa atau tidak valid. Hubungi admin dengan Order ID: ' + oid); return; }
+    alert(`${res.failed.length} foto belum terunduh.\nPenyebab: ${res.firstErr}\nPembayaran kamu aman. Tekan "Coba unduh lagi" di bagian atas galeri.`);
   }
   async function startDownload(list) {
     if (galBusy || !list.length) return;
-    galBusy = true; $('galDl').disabled = true; $('galDlTxt').textContent = 'Menyiapkan…';
+    if (pending && pending.folder === galFolder && !confirm(`Masih ada ${pending.files.length} foto dari order sebelumnya yang belum terunduh.\nMulai unduhan baru? Daftar lama akan dihapus (pakai "Coba unduh lagi" kalau mau melanjutkan yang lama).`)) return;
+    galBusy = true; $('galDl').disabled = true; $('galDlTxt').textContent = 'Menyiapkan…'; renderRetry();
     try {
       const cfg = CFG;
       const o = await api('/checkout', { folder: galFolder, ids: list.map(f => f.id), vid });
@@ -966,10 +1013,19 @@
         $('galDlTxt').textContent = 'Menunggu pembayaran…';
         await waitPaid(o.orderId);
       }
-      await fetchAll(list, o.orderId);
+      setPending(o.orderId, list, '');   // simpan dulu: kalau tab tertutup di tengah jalan, unduhan bisa dilanjutkan
+      afterRun(o.orderId, await fetchAll(list, o.orderId));
     } catch (e) { alert(e.message || 'Terjadi kesalahan.'); }
-    galBusy = false; $('galDl').disabled = false; $('galProg').style.width = '0'; galUpdateBar();
+    galBusy = false; $('galDl').disabled = false; $('galProg').style.width = '0'; galUpdateBar(); renderRetry();
   }
+  window.galRetry = async () => {
+    if (galBusy || !pending) return;
+    const p = pending; galBusy = true; $('galDl').disabled = true; renderRetry();
+    try { afterRun(p.orderId, await fetchAll(p.files, p.orderId, '-lanjutan')); }
+    catch (e) { alert(e.message || 'Terjadi kesalahan.'); }
+    galBusy = false; $('galDl').disabled = false; $('galProg').style.width = '0'; galUpdateBar(); renderRetry();
+  };
+  window.galDiscard = () => { if (confirm('Tutup daftar ini? Foto yang belum terunduh tidak bisa dilanjutkan lagi dari sini.')) { setPending('', []); renderRetry(); } };
   window.galDownload = () => startDownload(galSel.size ? galFiles.filter(f => galSel.has(f.id)) : galFiles);
 
   // lightbox
