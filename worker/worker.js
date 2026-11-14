@@ -84,13 +84,16 @@ async function markPaid(env, id, o) {
 async function refresh(env, id) {
   const o = await env.ORDERS.get('order:' + id, 'json');
   if (!o) return null;
+  let detail = '';
   if (o.status === 'pending') {
-    const d = await (await fetch(`${mt(o.prod).api}/v2/${id}/status`, { headers: { authorization: basic(env, o.prod) } })).json();
+    const r = await fetch(`${mt(o.prod).api}/v2/${id}/status`, { headers: { authorization: basic(env, o.prod) } });
+    const d = await r.json().catch(() => ({}));
     const s = d.transaction_status;
     if ((s === 'settlement' || (s === 'capture' && d.fraud_status === 'accept')) && Number(d.gross_amount) === o.amount) await markPaid(env, id, o);
     else if (['expire', 'cancel', 'deny', 'failure'].includes(s)) { o.status = 'failed'; await env.ORDERS.put('order:' + id, JSON.stringify(o), TTL); }
+    else detail = s ? 'status Midtrans: ' + s : 'Midtrans menolak pengecekan (' + (d.status_code || r.status) + ': ' + (d.status_message || 'tanpa detail') + ')';
   }
-  return o;
+  return Object.assign({}, o, { detail });
 }
 
 export default {
@@ -146,7 +149,7 @@ export default {
 
       if (p.startsWith('/order/')) {
         const o = await refresh(env, p.slice(7));
-        return o ? json({ status: o.status }) : json({ error: 'order tidak ditemukan' }, 404);
+        return o ? json({ status: o.status, detail: o.detail }) : json({ error: 'order tidak ditemukan' }, 404);
       }
 
       if (p === '/midtrans-webhook' && req.method === 'POST') {
