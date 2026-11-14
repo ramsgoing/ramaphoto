@@ -9,8 +9,8 @@ MIDTRANS_PROD = "false"
 PRICE_PER_PHOTO = "2000"
 FREE_PER_ALBUM = "5"
 FREE_PER_IP = "15"
-ALLOWED_ORIGIN = "https://GANTI-DOMAIN-KAMU.com"
+ALLOWED_ORIGIN = "https://ramaphoto.vercel.app"
 
 [[kv_namespaces]]
 binding = "ORDERS"
-id = "GANTI_KV_ID"               # hasil: npx wrangler kv namespace create ORDERS
+id = "832cba26c75c4b819930f27cd6b20754"               # hasil: npx wrangler kv namespace create ORDERS
