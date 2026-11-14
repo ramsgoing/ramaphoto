@@ -80,6 +80,20 @@ service cloud.firestore {
     // Public bisa baca albums & settings
     match /albums/{doc} { allow read: if true; allow write: if request.auth != null; }
     match /settings/{doc} { allow read: if true; allow write: if request.auth != null; }
+    // Permintaan edit: klien boleh MEMBUAT (dengan batasan isi), hanya admin yang boleh baca/ubah/hapus
+    match /editRequests/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['code','albumId','albumName','folder','files','note','clientName','clientWa','clientEmail','status','createdAt','vid'])
+        && request.resource.data.keys().hasAll(['code','albumId','albumName','folder','files','note','clientName','clientWa','clientEmail','status','createdAt','vid'])
+        && request.resource.data.status == 'baru'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.code is string && request.resource.data.code.size() == 10
+        && request.resource.data.files is list && request.resource.data.files.size() > 0 && request.resource.data.files.size() <= 300
+        && request.resource.data.clientName is string && request.resource.data.clientName.size() > 0 && request.resource.data.clientName.size() <= 80
+        && request.resource.data.clientWa is string && request.resource.data.clientWa.size() >= 9 && request.resource.data.clientWa.size() <= 20
+        && request.resource.data.clientEmail is string && request.resource.data.clientEmail.size() <= 100
+        && request.resource.data.note is string && request.resource.data.note.size() <= 800;
+      allow read, update, delete: if request.auth != null;
+    }
   }
 }
 ```

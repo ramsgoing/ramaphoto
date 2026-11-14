@@ -329,6 +329,24 @@
     .m-pricing .pr-grid { grid-template-columns: 1fr; gap: 12px; }
     .m-pricing .pr-card { padding: 18px; } .m-pricing .pr-price { font-size: 30px; }
     @media (max-width: 768px) { .pr-grid { grid-template-columns: 1fr; } }
+
+    /* ── PILIH EDIT ── */
+    .gal-modes{display:flex;gap:6px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border)}
+    .gal-mode{flex:1;max-width:200px;padding:8px 12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+    .gal-mode.on{background:var(--gold);color:#111;border-color:var(--gold)}
+    .gal-mode#modeEdit.on{background:#6aa6ff;border-color:#6aa6ff}
+    .gal-item.sel-edit{outline:3px solid #6aa6ff;outline-offset:-3px}
+    .gal-item.sel-edit .gal-chk{background:#6aa6ff;border-color:#6aa6ff}
+    .ef{position:fixed;inset:0;z-index:2200;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+    .ef.open{display:flex}
+    .ef-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;width:100%;max-width:440px;color:var(--text);position:relative}
+    .ef-card h3{font-size:17px;margin-bottom:6px}
+    .ef-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+    .ef-card label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin:12px 0 5px;text-transform:uppercase}
+    .ef-card input,.ef-card textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;font-family:inherit;outline:none}
+    .ef-card input:focus,.ef-card textarea:focus{border-color:#6aa6ff}
+    .ef-act{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+    .ef-code{font-size:28px;font-weight:700;letter-spacing:.08em;color:#6aa6ff;text-align:center;padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;user-select:all}
   </style>
 </head>
 <body>
@@ -582,22 +600,46 @@
   <div class="gal-head">
     <div class="gal-title"><span id="galTitle"></span><div class="gal-sub" id="galSub"></div></div>
     <button class="gal-btn" id="galSelAll" onclick="galToggleAll()">Pilih Semua</button>
-    <button class="gal-btn gold" id="galDl" onclick="galDownload()">⬇ <span id="galDlTxt">Download Semua</span></button>
+    <button class="gal-btn gold" id="galDl" onclick="galDownload()"><span id="galDlIco">⬇</span> <span id="galDlTxt">Download Semua</span></button>
     <button class="gal-btn" onclick="galClose()">✕</button>
   </div>
+  <div class="gal-modes"><button id="modeDl" class="gal-mode on" onclick="galMode('dl')">⬇ Download</button><button id="modeEdit" class="gal-mode" onclick="galMode('edit')">✎ Pilih Edit</button></div>
   <div class="gal-prog"><div id="galProg"></div></div>
   <div class="gal-body"><div id="galRetry" class="gal-retry" style="display:none"></div><div id="galGrid" class="gal-grid"></div><div id="galMsg" class="gal-msg"></div></div>
 </div>
 <div class="lb" id="lb">
-  <div class="lb-bar"><span id="lbCount"></span><span><button class="gal-btn gold" onclick="lbDownload()">⬇ Download</button> <button class="gal-btn" onclick="lbClose()">✕</button></span></div>
+  <div class="lb-bar"><span id="lbCount"></span><span><button class="gal-btn gold" id="lbAct" onclick="lbAct()">⬇ Download</button> <button class="gal-btn" onclick="lbClose()">✕</button></span></div>
   <button class="lb-nav" style="left:12px" onclick="lbMove(-1)">‹</button>
   <img id="lbImg" alt=""/>
   <button class="lb-nav" style="right:12px" onclick="lbMove(1)">›</button>
 </div>
 
+<!-- FORM PERMINTAAN EDIT -->
+<div class="ef" id="ef">
+  <div class="ef-card">
+    <div id="efFormBox">
+      <h3>Permintaan Edit Foto</h3>
+      <p class="ef-sub" id="efSummary"></p>
+      <label>Nama *</label><input id="efName" maxlength="80" autocomplete="name"/>
+      <label>Nomor WhatsApp *</label><input id="efWa" inputmode="tel" maxlength="20" placeholder="081234567890" autocomplete="tel"/>
+      <label>Email (opsional)</label><input id="efEmail" type="email" maxlength="100" autocomplete="email"/>
+      <label>Catatan untuk fotografer (opsional)</label><textarea id="efNote" rows="3" maxlength="800" placeholder="Contoh: warna lebih hangat, kulit lebih halus"></textarea>
+      <input id="efHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0"/>
+      <div class="ef-act"><button class="gal-btn" onclick="efClose()">Batal</button><button class="gal-btn gold" id="efSend" onclick="efSubmit()">Kirim Permintaan</button></div>
+    </div>
+    <div id="efDoneBox" style="display:none">
+      <h3>Permintaan terkirim ✓</h3>
+      <p class="ef-sub">Kode permintaan kamu:</p>
+      <div class="ef-code" id="efCode"></div>
+      <p class="ef-sub" id="efDoneNote">Simpan kode ini. Fotografer akan menghubungi kamu lewat WhatsApp.</p>
+      <div class="ef-act"><a class="gal-btn gold" id="efWaBtn" target="_blank" rel="noopener" style="display:none;text-decoration:none">Kirim ke WhatsApp</a><button class="gal-btn" onclick="efClose()">Tutup</button></div>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, onSnapshot, doc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAgIIyi08oxaHMnqJHiSEDStxHNMTzZ5oo",
@@ -852,7 +894,7 @@
   };
 
   // ── GALLERY + PEMBAYARAN (lewat Cloudflare Worker, lihat folder worker/) ──
-  const WORKER_URL = 'https://rams-gallery.ramsgallery.workers.dev'; // contoh: https://rams-gallery.namakamu.workers.dev
+  const WORKER_URL = 'GANTI_WORKER_URL'; // contoh: https://rams-gallery.namakamu.workers.dev
   const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
   const W = p => WORKER_URL.replace(/\/$/, '') + p;
@@ -883,26 +925,36 @@
     });
   }
 
+  let galModeNow = 'dl';
+  const editSel = new Set();
   function galUpdateBar() {
-    const n = galSel.size, all = n || galFiles.length;
-    let price = '';
-    if (CFG && all > CFG.freeLimit && CFG.pricePerPhoto) price = ` · ±${rp((all - CFG.freeLimit) * CFG.pricePerPhoto)}`;
-    $('galDlTxt').textContent = (n ? `Download (${n})` : 'Download Semua') + price;
+    const edit = galModeNow === 'edit', S = edit ? editSel : galSel, n = S.size;
+    $('modeDl').classList.toggle('on', !edit); $('modeEdit').classList.toggle('on', edit);
+    $('galDlIco').textContent = edit ? '✎' : '⬇';
+    if (edit) {
+      $('galDlTxt').textContent = n ? `Kirim Permintaan Edit (${n})` : 'Kirim Permintaan Edit';
+      $('galSub').textContent = `${galFiles.length} foto · ${n ? n + ' ditandai untuk diedit' : 'tap lingkaran di foto untuk menandai'}`;
+    } else {
+      const all = n || galFiles.length; let price = '';
+      if (CFG && all > CFG.freeLimit && CFG.pricePerPhoto) price = ` · ±${rp((all - CFG.freeLimit) * CFG.pricePerPhoto)}`;
+      $('galDlTxt').textContent = (n ? `Download (${n})` : 'Download Semua') + price;
+      const info = !CFG ? '' : CFG.pricePerPhoto ? ` · ${CFG.freeLimit} foto gratis, selebihnya ${rp(CFG.pricePerPhoto)}/foto` : ' · Semua foto gratis';
+      $('galSub').textContent = `${galFiles.length} foto${n ? ' · ' + n + ' dipilih' : ''}${info}`;
+    }
     $('galSelAll').textContent = (n && n === galFiles.length) ? 'Batal Pilih' : 'Pilih Semua';
-    const info = !CFG ? '' : CFG.pricePerPhoto ? ` · ${CFG.freeLimit} foto gratis, selebihnya ${rp(CFG.pricePerPhoto)}/foto` : ' · Semua foto gratis';
-    $('galSub').textContent = `${galFiles.length} foto${n ? ' · ' + n + ' dipilih' : ''}${info}`;
     $('galGrid').querySelectorAll('.gal-item').forEach((el, i) => {
-      const on = galSel.has(galFiles[i].id);
-      el.classList.toggle('sel', on);
-      el.querySelector('.gal-chk').textContent = on ? '✓' : '';
+      const on = S.has(galFiles[i].id);
+      el.classList.toggle('sel', !edit && on); el.classList.toggle('sel-edit', edit && on);
+      el.querySelector('.gal-chk').textContent = on ? (edit ? '✎' : '✓') : '';
     });
   }
+  window.galMode = (m) => { if (galBusy) return; galModeNow = m; galUpdateBar(); };
 
   window.openGallery = async (albumId) => {
     const a = allAlbums.find(x => x.id === albumId);
     if (!a) return;
     trackClick(albumId);
-    galAlbum = a; galFiles = []; galSel = new Set(); galFolder = folderId(a.drive);
+    galAlbum = a; galFiles = []; galSel = new Set(); galFolder = folderId(a.drive); editSel.clear(); galModeNow = 'dl';
     loadPending(galFolder); $('galRetry').style.display = 'none';
     $('galTitle').textContent = a.name; $('galSub').textContent = '';
     $('galGrid').innerHTML = ''; $('galProg').style.width = '0';
@@ -918,17 +970,21 @@
     galUpdateBar(); renderRetry();
   };
   window.galClose = () => { $('gal').classList.remove('open'); document.body.style.overflow = ''; };
-  window.galToggle = (i) => { const id = galFiles[i].id; galSel.has(id) ? galSel.delete(id) : galSel.add(id); galUpdateBar(); };
-  window.galToggleAll = () => { if (galSel.size === galFiles.length) galSel.clear(); else galFiles.forEach(f => galSel.add(f.id)); galUpdateBar(); };
+  window.galToggle = (i) => { const S = galModeNow === 'edit' ? editSel : galSel, id = galFiles[i].id; S.has(id) ? S.delete(id) : S.add(id); galUpdateBar(); };
+  window.galToggleAll = () => { const S = galModeNow === 'edit' ? editSel : galSel; if (S.size === galFiles.length) S.clear(); else galFiles.forEach(f => S.add(f.id)); galUpdateBar(); };
 
   async function waitPaid(id) {
+    let detail = '', denied = 0;
     for (let i = 0; i < 60; i++) {
       const d = await api('/order/' + id);
       if (d.status === 'paid') return;
       if (d.status === 'failed') throw new Error('Pembayaran gagal atau kedaluwarsa.');
+      detail = d.detail || detail;
+      denied = /menolak pengecekan/.test(d.detail || '') ? denied + 1 : 0;
+      if (denied >= 2) throw new Error('Server tidak bisa memverifikasi pembayaran: ' + detail + '\nOrder ID: ' + id + '\nHubungi admin kalau kamu sudah membayar.');
       await new Promise(r => setTimeout(r, 3000));
     }
-    throw new Error('Pembayaran belum terkonfirmasi. Kalau sudah bayar, hubungi admin dengan Order ID: ' + id);
+    throw new Error('Pembayaran belum terkonfirmasi' + (detail ? ' (' + detail + ')' : '') + '. Kalau sudah bayar, hubungi admin dengan Order ID: ' + id);
   }
   // ── Lanjutkan unduhan yang gagal (tanpa bayar ulang). Order di server berlaku 7 hari. ──
   const PEND_KEY = 'rams-pending', JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -1026,12 +1082,68 @@
     galBusy = false; $('galDl').disabled = false; $('galProg').style.width = '0'; galUpdateBar(); renderRetry();
   };
   window.galDiscard = () => { if (confirm('Tutup daftar ini? Foto yang belum terunduh tidak bisa dilanjutkan lagi dari sini.')) { setPending('', []); renderRetry(); } };
-  window.galDownload = () => startDownload(galSel.size ? galFiles.filter(f => galSel.has(f.id)) : galFiles);
+  window.galDownload = () => galModeNow === 'edit' ? openEditForm() : startDownload(galSel.size ? galFiles.filter(f => galSel.has(f.id)) : galFiles);
+
+  // ── PILIH EDIT: klien menandai foto untuk diedit → tersimpan di admin (terpisah dari download) ──
+  function lbBtn() {
+    const b = $('lbAct');
+    if (galModeNow === 'edit') b.textContent = editSel.has(galFiles[lbIdx].id) ? '✓ Ditandai (batal)' : '✎ Tandai untuk edit';
+    else b.textContent = '⬇ Download';
+  }
+  window.lbAct = () => {
+    if (galModeNow === 'edit') { const id = galFiles[lbIdx].id; editSel.has(id) ? editSel.delete(id) : editSel.add(id); galUpdateBar(); lbBtn(); }
+    else lbDownload();
+  };
+  const EDIT_ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const editCode = () => 'EDIT-' + Array.from(crypto.getRandomValues(new Uint8Array(5)), b => EDIT_ALPHA[b % EDIT_ALPHA.length]).join('');
+  const waDigits = n => { let d = String(n || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '62' + d.slice(1); return d; };
+  function waMsg(code, name, album, files, note) {
+    const head = `Halo kak, saya ${name}. Saya mau request edit foto.\nKode: ${code}\nAlbum: ${album}\nJumlah: ${files.length} foto\n`;
+    const tail = note ? `\nCatatan: ${note.slice(0, 300)}` : '';
+    const names = files.map(f => f.name);
+    const build = n => head + 'File: ' + names.slice(0, n).join(', ') + (n < names.length ? ` dan ${names.length - n} foto lainnya (daftar lengkap ada di admin)` : '') + tail;
+    let n = names.length;
+    while (n > 0 && encodeURIComponent(build(n)).length > 1800) n = n > 20 ? n - 10 : n - 1;
+    return n > 0 ? build(n) : head + tail + '\n(Daftar file lengkap ada di admin.)';
+  }
+  function openEditForm() {
+    if (!editSel.size) { alert('Tandai dulu foto yang mau diedit (tap lingkaran di pojok foto).'); return; }
+    $('efSummary').textContent = `${editSel.size} foto dari album "${galAlbum.name}" akan dikirim sebagai permintaan edit.`;
+    $('efFormBox').style.display = ''; $('efDoneBox').style.display = 'none';
+    $('ef').classList.add('open');
+  }
+  window.efClose = () => $('ef').classList.remove('open');
+  window.efSubmit = async () => {
+    if ($('efHp').value) return;
+    const name = $('efName').value.trim(), wa = waDigits($('efWa').value), email = $('efEmail').value.trim(), note = $('efNote').value.trim();
+    if (!name) return alert('Isi nama kamu.');
+    if (wa.length < 9) return alert('Isi nomor WhatsApp yang valid.');
+    if (email && !/^\S+@\S+\.\S+$/.test(email)) return alert('Format email belum benar.');
+    let last = 0; try { last = Number(localStorage.getItem('rams-edit-last')) || 0; } catch (e) {}
+    if (Date.now() - last < 30000) return alert('Tunggu sebentar sebelum mengirim permintaan lagi.');
+    const files = galFiles.filter(f => editSel.has(f.id)).map(f => ({ id: f.id, name: f.name }));
+    if (!files.length) return alert('Belum ada foto yang ditandai.');
+    const code = editCode(), btn = $('efSend');
+    btn.disabled = true; btn.textContent = 'Mengirim…';
+    try {
+      await addDoc(collection(db, 'editRequests'), { code, albumId: galAlbum.id, albumName: galAlbum.name, folder: galFolder || '', files, note, clientName: name, clientWa: wa, clientEmail: email, status: 'baru', createdAt: serverTimestamp(), vid });
+      try { localStorage.setItem('rams-edit-last', String(Date.now())); } catch (e) {}
+      $('efCode').textContent = code;
+      const adminWa = waDigits(paySet.waNumber);
+      const wb = $('efWaBtn');
+      if (adminWa) { wb.href = `https://wa.me/${adminWa}?text=${encodeURIComponent(waMsg(code, name, galAlbum.name, files, note))}`; wb.style.display = ''; $('efDoneNote').textContent = 'Simpan kode ini. Tekan tombol di bawah supaya fotografer langsung menerima pesanmu di WhatsApp.'; }
+      else { wb.style.display = 'none'; $('efDoneNote').textContent = 'Simpan kode ini. Fotografer akan menghubungi kamu lewat WhatsApp.'; }
+      $('efFormBox').style.display = 'none'; $('efDoneBox').style.display = '';
+      editSel.clear(); galUpdateBar(); if ($('lb').classList.contains('open')) lbBtn();
+    } catch (e) { alert('Permintaan gagal dikirim. Coba lagi sebentar. (' + (e.code || e.message) + ')'); }
+    btn.disabled = false; btn.textContent = 'Kirim Permintaan';
+  };
 
   // lightbox
   function lbShow() {
     $('lbImg').src = thumbUrl(galFiles[lbIdx].id, 1000);
     $('lbCount').textContent = `${lbIdx + 1} / ${galFiles.length} · ${galFiles[lbIdx].name}`;
+    lbBtn();
   }
   window.lbOpen = (i) => { lbIdx = i; $('lb').classList.add('open'); lbShow(); };
   window.lbClose = () => { $('lb').classList.remove('open'); $('lbImg').src = ''; };

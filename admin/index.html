@@ -159,6 +159,32 @@
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .settings-grid { grid-template-columns: 1fr; }
     }
+
+    /* ── PERMINTAAN EDIT ── */
+    .nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+    .ed-filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .ed-filters button { padding: 7px 14px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .ed-filters button.on { background: var(--gold); color: #111; border-color: var(--gold); }
+    .ed-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+    .ed-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    .ed-code { font-weight: 700; letter-spacing: .06em; color: var(--gold); font-size: 15px; }
+    .ed-time { color: var(--muted); font-size: 12px; margin-left: 8px; }
+    .ed-meta { font-size: 13px; line-height: 1.7; color: var(--text); }
+    .ed-note { margin-top: 8px; padding: 9px 12px; background: var(--surface2); border-radius: 8px; font-size: 13px; line-height: 1.6; }
+    .ed-status { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .ed-status.st-baru { border-color: var(--red); color: var(--red); }
+    .ed-status.st-dikerjakan { border-color: var(--gold); color: var(--gold); }
+    .ed-status.st-selesai { border-color: var(--green); color: var(--green); }
+    .ed-card details { margin-top: 10px; }
+    .ed-card summary { cursor: pointer; font-size: 13px; color: var(--gold); }
+    .ed-files { margin-top: 8px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; line-height: 1.7; color: var(--text); max-height: 220px; overflow-y: auto; background: var(--surface2); padding: 10px 12px; border-radius: 8px; }
+    .ed-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; margin-top: 10px; }
+    .ed-thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: var(--surface2); }
+    .ed-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .ed-actions button, .ed-actions a { padding: 7px 13px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .ed-actions .ed-del { margin-left: auto; color: var(--red); }
+    .ed-actions .ed-del:hover { border-color: var(--red); }
+    .ed-empty { padding: 40px 0; text-align: center; color: var(--muted); font-size: 14px; }
   </style>
 </head>
 <body>
@@ -209,6 +235,10 @@
         <div class="nav-item" onclick="showPanel('payment')">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           <span>Pembayaran</span>
+        </div>
+        <div class="nav-item" onclick="showPanel('edits')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          <span>Permintaan Edit</span><span class="nav-badge" id="editBadge" style="display:none">0</span>
         </div>
       </nav>
       <div class="sidebar-footer">
@@ -315,6 +345,18 @@
           </div>
         </div>
       </div>
+
+      <!-- PERMINTAAN EDIT -->
+      <div class="panel" id="panel-edits">
+        <div class="topbar"><div><h1>Permintaan Edit</h1><div class="topbar-sub">Foto yang dipilih klien untuk diedit. Terpisah dari download.</div></div></div>
+        <div class="ed-filters" id="editFilters">
+          <button data-f="semua" class="on" onclick="setEditFilter('semua')">Semua</button>
+          <button data-f="baru" onclick="setEditFilter('baru')">Baru</button>
+          <button data-f="dikerjakan" onclick="setEditFilter('dikerjakan')">Dikerjakan</button>
+          <button data-f="selesai" onclick="setEditFilter('selesai')">Selesai</button>
+        </div>
+        <div id="editList"><div class="ed-empty">Memuat…</div></div>
+      </div>
     </main>
   </div>
 </div>
@@ -387,7 +429,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAgIIyi08oxaHMnqJHiSEDStxHNMTzZ5oo",
@@ -421,12 +463,13 @@
     if (user) {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('adminScreen').style.display = 'block';
-      startListeners();
+      startListeners(); startEditListener();
     } else {
       document.getElementById('adminScreen').style.display = 'none';
       document.getElementById('loginScreen').style.display = 'flex';
       if (unsubAlbums) unsubAlbums();
       if (unsubSettings) unsubSettings();
+      if (unsubEdits) { unsubEdits(); unsubEdits = null; }
     }
   });
 
@@ -504,6 +547,61 @@
     });
   }
 
+  // ── PERMINTAAN EDIT ──
+  const WORKER_URL = 'GANTI_WORKER_URL';   // dipakai untuk menampilkan thumbnail foto di sini (opsional)
+  const escA = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const EDIT_STATUS = { baru: 'Baru', dikerjakan: 'Dikerjakan', selesai: 'Selesai' };
+  let editDocs = [], editFilter = 'semua', unsubEdits = null;
+  const waNum = n => { let d = String(n || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '62' + d.slice(1); return d; };
+  const fmtTime = ts => ts && ts.toDate ? ts.toDate().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+  function editCardHTML(d) {
+    const thumbs = /^https:\/\//.test(WORKER_URL) ? `<div class="ed-thumbs">${d.files.map(f => `<img loading="lazy" src="${escA(WORKER_URL.replace(/\/$/, ''))}/thumb/${escA(f.id)}?w=200" title="${escA(f.name)}"/>`).join('')}</div>` : '';
+    const msg = `Halo ${d.clientName}, permintaan edit ${d.code} (${d.files.length} foto, album ${d.albumName}) sudah kami terima. Nanti kami kabari kalau sudah selesai ya.`;
+    return `<div class="ed-card" data-id="${escA(d.id)}">
+      <div class="ed-head"><div><span class="ed-code">${escA(d.code)}</span><span class="ed-time">${escA(fmtTime(d.createdAt))}</span></div>
+        <select class="ed-status st-${escA(d.status)}" data-act="status">${Object.entries(EDIT_STATUS).map(([k, v]) => `<option value="${k}"${d.status === k ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+      <div class="ed-meta"><b>${escA(d.clientName)}</b> · ${escA(d.clientWa)}${d.clientEmail ? ' · ' + escA(d.clientEmail) : ''}<br>Album: ${escA(d.albumName)} · ${d.files.length} foto</div>
+      ${d.note ? `<div class="ed-note">📝 ${escA(d.note)}</div>` : ''}
+      <details><summary>Lihat ${d.files.length} nama file</summary><div class="ed-files">${d.files.map(f => escA(f.name)).join('<br>')}</div>${thumbs}</details>
+      <div class="ed-actions"><button data-act="copy-lines">Salin nama file</button><button data-act="copy-noext">Salin tanpa ekstensi</button>
+        <a href="https://wa.me/${escA(waNum(d.clientWa))}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">Chat WhatsApp</a><button data-act="del" class="ed-del">Hapus</button></div></div>`;
+  }
+  function renderEdits() {
+    const list = editFilter === 'semua' ? editDocs : editDocs.filter(d => d.status === editFilter);
+    document.getElementById('editList').innerHTML = list.length ? list.map(editCardHTML).join('') : '<div class="ed-empty">Belum ada permintaan.</div>';
+    document.querySelectorAll('#editFilters button').forEach(b => b.classList.toggle('on', b.dataset.f === editFilter));
+    const n = editDocs.filter(d => d.status === 'baru').length, bd = document.getElementById('editBadge');
+    bd.textContent = n; bd.style.display = n ? '' : 'none';
+  }
+  window.setEditFilter = f => { editFilter = f; renderEdits(); };
+  function startEditListener() {
+    if (unsubEdits) return;
+    unsubEdits = onSnapshot(query(collection(db, 'editRequests'), orderBy('createdAt', 'desc')), snap => {
+      editDocs = snap.docs.map(s => { const x = s.data(); return { id: s.id, ...x, files: Array.isArray(x.files) ? x.files : [] }; });
+      renderEdits();
+    }, err => { document.getElementById('editList').innerHTML = `<div class="ed-empty">Tidak bisa memuat permintaan (${escA(err.code || err.message)}). Cek Firestore Rules untuk editRequests.</div>`; });
+  }
+  async function copyText(t) {
+    try { await navigator.clipboard.writeText(t); }
+    catch (e) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+    showToast('Disalin ke clipboard', 'success');
+  }
+  const stripExt = n => String(n).replace(/\.[^.]+$/, '');
+  document.getElementById('editList').addEventListener('click', async e => {
+    const btn = e.target.closest('[data-act]'); if (!btn || btn.tagName === 'SELECT') return;
+    const d = editDocs.find(x => x.id === btn.closest('.ed-card').dataset.id); if (!d) return;
+    if (btn.dataset.act === 'copy-lines') copyText(d.files.map(f => f.name).join('\n'));
+    else if (btn.dataset.act === 'copy-noext') copyText(d.files.map(f => stripExt(f.name)).join(' '));
+    else if (btn.dataset.act === 'del' && confirm(`Hapus permintaan ${d.code} dari ${d.clientName}?`)) {
+      try { await deleteDoc(doc(db, 'editRequests', d.id)); showToast('Permintaan dihapus', 'success'); } catch (er) { showToast('Gagal menghapus: ' + er.message, 'error'); }
+    }
+  });
+  document.getElementById('editList').addEventListener('change', async e => {
+    const sel = e.target.closest('[data-act="status"]'); if (!sel) return;
+    try { await updateDoc(doc(db, 'editRequests', sel.closest('.ed-card').dataset.id), { status: sel.value }); showToast('Status diperbarui', 'success'); }
+    catch (er) { showToast('Gagal mengubah status: ' + er.message, 'error'); }
+  });
+
   // ── PEMBAYARAN ──
   onSnapshot(doc(db, 'settings', 'payment'), snap => {
     const d = snap.exists() ? snap.data() : {};
@@ -542,7 +640,7 @@
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('panel-' + name).classList.add('active');
-    const idx = ['dashboard','albums','settings','payment'].indexOf(name);
+    const idx = ['dashboard','albums','settings','payment','edits'].indexOf(name);
     document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
   };
 
