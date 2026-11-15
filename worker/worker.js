@@ -173,6 +173,8 @@ export default {
         const { folder, ids, vid, t } = await req.json();
         if (!/^[\w-]+$/.test(folder || '') || !Array.isArray(ids) || !ids.length || ids.length > 1000 || !vid) return json({ error: 'permintaan tidak valid' }, 400);
         if (await locked(env, folder, t)) return json({ error: 'Album privat: kode akses diperlukan', code: 'locked' }, 403);
+        const al = (await loadFs(env)).albums.find(x => folderOf(x.drive) === folder);
+        if (al && al.mode === 'edit') return json({ error: 'Album ini tidak menyediakan download.' }, 403);
         const valid = new Set((await listFolder(env, folder)).map(f => f.id));
         const sel = [...new Set(ids)];
         if (!sel.every(i => valid.has(i))) return json({ error: 'ada foto yang bukan dari album ini' }, 400);
