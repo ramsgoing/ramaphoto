@@ -45,16 +45,23 @@ const basic = (env, prod) => 'Basic ' + btoa(sKey(env, prod) + ':');
 const fsVal = v => 'stringValue' in v ? v.stringValue : 'integerValue' in v ? Number(v.integerValue) : 'doubleValue' in v ? v.doubleValue : 'booleanValue' in v ? v.booleanValue : null;
 const fsObj = f => Object.fromEntries(Object.entries(f || {}).map(([k, v]) => [k, fsVal(v)]));
 const folderOf = u => { const m = (u || '').match(/folders\/([\w-]+)/) || (u || '').match(/[?&]id=([\w-]+)/); return m ? m[1] : null; };
-let fsCache = { t: 0, s: {}, albums: [] };
+let fsCache = { t: 0, s: {}, albums: [], ok: false };
 async function loadFs(env) {
   if (Date.now() - fsCache.t < 30000) return fsCache;
   try {
     const base = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents`;
-    const [r1, r2] = await Promise.all([fetch(base + '/settings/payment'), fetch(base + '/albums?pageSize=300')]);
-    const s = r1.ok ? fsObj((await r1.json()).fields) : {};
-    const albums = r2.ok ? ((await r2.json()).documents || []).map(d => fsObj(d.fields)) : [];
-    if (r1.ok || r2.ok) fsCache = { t: Date.now(), s, albums };
-  } catch (e) { /* pakai cache lama / nilai cadangan env */ }
+    let s = fsCache.s;   // pengaturan harga: kalau gagal dibaca, pakai yang terakhir (atau nilai cadangan env)
+    try { const r1 = await fetch(base + '/settings/payment'); if (r1.ok) s = fsObj((await r1.json()).fields); else if (r1.status === 404) s = {}; } catch (e) {}
+    let albums = [], pt = '', okAlb = true;
+    do {
+      const r = await fetch(base + '/albums?pageSize=300' + (pt ? '&pageToken=' + pt : ''));
+      if (!r.ok) { okAlb = false; break; }
+      const d = await r.json();
+      albums = albums.concat((d.documents || []).map(x => ({ ...fsObj(x.fields), _id: (x.name || '').split('/').pop() })));
+      pt = d.nextPageToken || '';
+    } while (pt);
+    if (okAlb) fsCache = { t: Date.now(), s, albums, ok: true };
+  } catch (e) { /* pakai cache lama; kalau belum pernah berhasil, ok tetap false */ }
   return fsCache;
 }
 const num = (v, d) => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? d : Number(v);
@@ -84,14 +91,38 @@ async function markPaid(env, id, o) {
 async function refresh(env, id) {
   const o = await env.ORDERS.get('order:' + id, 'json');
   if (!o) return null;
+  let detail = '';
   if (o.status === 'pending') {
-    const d = await (await fetch(`${mt(o.prod).api}/v2/${id}/status`, { headers: { authorization: basic(env, o.prod) } })).json();
+    const r = await fetch(`${mt(o.prod).api}/v2/${id}/status`, { headers: { authorization: basic(env, o.prod) } });
+    const d = await r.json().catch(() => ({}));
     const s = d.transaction_status;
     if ((s === 'settlement' || (s === 'capture' && d.fraud_status === 'accept')) && Number(d.gross_amount) === o.amount) await markPaid(env, id, o);
     else if (['expire', 'cancel', 'deny', 'failure'].includes(s)) { o.status = 'failed'; await env.ORDERS.put('order:' + id, JSON.stringify(o), TTL); }
+    else detail = s ? 'status Midtrans: ' + s : 'Midtrans menolak pengecekan (' + (d.status_code || r.status) + ': ' + (d.status_message || 'tanpa detail') + ')';
   }
-  return o;
+  return Object.assign({}, o, { detail });
 }
+
+// ── Album privat: kode akses → token bertanda tangan (HMAC), berlaku 12 jam ──
+const eq = (a, b) => { a = String(a); b = String(b); if (a.length !== b.length) return false; let r = 0; for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i); return r === 0; };
+const sha256hex = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map(b => b.toString(16).padStart(2, '0')).join('');
+const hmac = async (env, msg) => b64u(await crypto.subtle.sign('HMAC', await crypto.subtle.importKey('raw', new TextEncoder().encode(env.TOKEN_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']), new TextEncoder().encode(msg)));
+async function mkToken(env, folder) {
+  const exp = Date.now() + 12 * 3600 * 1000, body = enc(JSON.stringify({ f: folder, e: exp }));
+  return { token: body + '.' + await hmac(env, body), exp };
+}
+async function okToken(env, token, folder) {
+  if (!token || !env.TOKEN_SECRET) return false;
+  const [body, sig] = String(token).split('.');
+  if (!body || !sig || !eq(sig, await hmac(env, body))) return false;
+  try { const p = JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/'))); return p.f === folder && p.e > Date.now(); } catch (e) { return false; }
+}
+async function privAlbum(env, folder) {
+  const { albums, ok } = await loadFs(env);
+  if (!ok) throw new Error('Pengaturan album belum bisa dibaca server, coba lagi sebentar');   // gagal-aman: jangan buka kalau status privat tidak diketahui
+  return albums.find(a => a.visibility === 'private' && folderOf(a.drive) === folder) || null;
+}
+const locked = async (env, folder, token) => !!(await privAlbum(env, folder)) && !(await okToken(env, token, folder));
 
 export default {
   async fetch(req, env) {
@@ -100,6 +131,22 @@ export default {
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
     const url = new URL(req.url), p = url.pathname;
     try {
+      if (p === '/unlock' && req.method === 'POST') {
+        if (!env.TOKEN_SECRET) return json({ error: 'Fitur album privat belum aktif di server (TOKEN_SECRET belum diisi)' }, 503);
+        const ip = req.headers.get('CF-Connecting-IP') || 'unknown', rk = 'rl:unlock:' + ip;
+        const tries = Number(await env.ORDERS.get(rk)) || 0;
+        if (tries >= 30) return json({ error: 'Terlalu banyak percobaan. Coba lagi sekitar 15 menit lagi.' }, 429);
+        const { albumId, derived } = await req.json();
+        const { albums, ok } = await loadFs(env);
+        if (!ok) return json({ error: 'Server belum bisa membaca data album, coba lagi sebentar' }, 503);
+        const a = albums.find(x => x._id === albumId && x.visibility === 'private' && x.accessHash);
+        const good = !!a && typeof derived === 'string' && /^[0-9a-f]{64}$/.test(derived) && eq(await sha256hex(derived), a.accessHash);
+        if (!good) { await env.ORDERS.put(rk, String(tries + 1), { expirationTtl: 900 }); return json({ error: 'Kode salah' }, 403); }
+        const folder = folderOf(a.drive);
+        if (!folder) return json({ error: 'Album ini belum punya link folder' }, 400);
+        return json({ ...(await mkToken(env, folder)), folder });
+      }
+
       if (p === '/config') {
         const c = await payCfg(env, url.searchParams.get('folder'));
         return json({ enabled: c.enabled, freeLimit: c.free, pricePerPhoto: c.price, clientKey: cKey(env, c.prod), snapUrl: mt(c.prod).js });
@@ -108,6 +155,7 @@ export default {
       if (p === '/list') {
         const f = url.searchParams.get('folder') || '';
         if (!/^[\w-]+$/.test(f)) return json({ error: 'folder salah' }, 400);
+        if (await locked(env, f, url.searchParams.get('t'))) return json({ error: 'Album privat: kode akses diperlukan', code: 'locked' }, 403);
         return json(await listFolder(env, f));
       }
 
@@ -122,8 +170,9 @@ export default {
       }
 
       if (p === '/checkout' && req.method === 'POST') {
-        const { folder, ids, vid } = await req.json();
+        const { folder, ids, vid, t } = await req.json();
         if (!/^[\w-]+$/.test(folder || '') || !Array.isArray(ids) || !ids.length || ids.length > 1000 || !vid) return json({ error: 'permintaan tidak valid' }, 400);
+        if (await locked(env, folder, t)) return json({ error: 'Album privat: kode akses diperlukan', code: 'locked' }, 403);
         const valid = new Set((await listFolder(env, folder)).map(f => f.id));
         const sel = [...new Set(ids)];
         if (!sel.every(i => valid.has(i))) return json({ error: 'ada foto yang bukan dari album ini' }, 400);
@@ -146,7 +195,7 @@ export default {
 
       if (p.startsWith('/order/')) {
         const o = await refresh(env, p.slice(7));
-        return o ? json({ status: o.status }) : json({ error: 'order tidak ditemukan' }, 404);
+        return o ? json({ status: o.status, detail: o.detail }) : json({ error: 'order tidak ditemukan' }, 404);
       }
 
       if (p === '/midtrans-webhook' && req.method === 'POST') {
