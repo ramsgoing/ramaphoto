@@ -410,7 +410,7 @@
     <div class="field"><label>NAMA ALBUM</label><input type="text" id="modalName" placeholder="contoh: Graduation 2026"/></div>
     <div class="field"><label>KATEGORI</label><input type="text" id="modalKategori" placeholder="contoh: Event / Personal Shoot / Batch 2026"/></div>
     <div class="field"><label>TANGGAL</label><input type="text" id="modalTanggal" placeholder="contoh: Mei 2026"/></div>
-    <div class="field"><label>JUMLAH FOTO</label><input type="number" id="modalFoto" placeholder="contoh: 248" min="0"/></div>
+    <div class="field"><label>JUMLAH FOTO</label><input type="number" id="modalFoto" placeholder="otomatis dari Drive saat disimpan" min="0"/><div style="font-size:11px;color:var(--muted);margin-top:5px;">Dihitung otomatis dari folder Drive. Isi manual hanya kalau folder belum bisa dibaca.</div></div>
     <div class="field"><label>LINK GOOGLE DRIVE</label><input type="url" id="modalDrive" placeholder="https://drive.google.com/drive/folders/..."/></div>
     <div class="field">
       <label>DURASI TERSEDIA (sebelum otomatis dihapus)</label>
@@ -601,7 +601,7 @@
   }
 
   // ── PERMINTAAN EDIT ──
-  const WORKER_URL = 'GANTI_WORKER_URL';   // dipakai untuk menampilkan thumbnail foto di sini (opsional)
+  const WORKER_URL = 'https://rams-gallery.ramsgallery.workers.dev';   // dipakai untuk menampilkan thumbnail foto di sini (opsional)
   const escA = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const EDIT_STATUS = { baru: 'Baru', dikerjakan: 'Dikerjakan', selesai: 'Selesai' };
   let editDocs = [], editFilter = 'semua', unsubEdits = null;
@@ -981,11 +981,23 @@
         });
       }
 
+      // jumlah foto otomatis dari folder Drive (cadangan: angka manual kalau gagal)
+      let fotoCount = parseInt(document.getElementById('modalFoto').value) || 0;
+      const fm = document.getElementById('modalDrive').value.match(/folders\/([\w-]+)|[?&]id=([\w-]+)/);
+      if (fm && /^https:\/\//.test(WORKER_URL)) {
+        try {
+          const r = await fetch(WORKER_URL.replace(/\/$/, '') + '/count?folder=' + (fm[1] || fm[2]));
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok || !Number.isInteger(d.count)) throw new Error(d.error || ('HTTP ' + r.status));
+          fotoCount = d.count; document.getElementById('modalFoto').value = fotoCount;
+        } catch (e) { showToast('Jumlah foto otomatis gagal (' + e.message + '). Dipakai angka manual.', 'error'); }
+      }
+
       const data = {
         name,
         kategori: document.getElementById('modalKategori').value.trim(),
         tanggal: document.getElementById('modalTanggal').value.trim(),
-        foto: parseInt(document.getElementById('modalFoto').value) || 0,
+        foto: fotoCount,
         drive: document.getElementById('modalDrive').value.trim(),
         durationDays: parseInt(document.getElementById('modalDuration').value),
         payMode: document.getElementById('modalPayMode').value,

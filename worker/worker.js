@@ -159,6 +159,12 @@ export default {
         return json(await listFolder(env, f));
       }
 
+      if (p === '/count') {   // jumlah foto di folder (dipakai admin saat menyimpan album)
+        const f = url.searchParams.get('folder') || '';
+        if (!/^[\w-]+$/.test(f)) return json({ error: 'folder salah' }, 400);
+        return json({ count: (await listFolder(env, f)).length });
+      }
+
       if (p.startsWith('/thumb/')) {
         const id = p.slice(7), w = Math.min(Number(url.searchParams.get('w')) || 400, 1000);
         const m = await (await g(env, `https://www.googleapis.com/drive/v3/files/${id}?fields=thumbnailLink`)).json();
