@@ -347,6 +347,8 @@
     .ef-card input:focus,.ef-card textarea:focus{border-color:#6aa6ff}
     .ef-act{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
     .ef-code{font-size:28px;font-weight:700;letter-spacing:.08em;color:#6aa6ff;text-align:center;padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;user-select:all}
+    .priv-entry { text-align: center; font-size: 13px; color: var(--muted); margin: 8px 0 24px; }
+    .priv-entry button { background: none; border: none; color: var(--gold); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0 2px; font-family: inherit; }
   </style>
 </head>
 <body>
@@ -417,6 +419,7 @@
     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     Lihat Semua Album
   </button>
+  <div class="priv-entry" id="privEntry" style="display:none;">🔒 Punya kode album privat? <button onclick="promptCode(null)">Masukkan kode</button></div>
 </section>
 
 <section class="section pricing-off" id="harga">
@@ -540,6 +543,7 @@
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Lihat Semua Album
       </button>
+      <div class="priv-entry" id="mPrivEntry" style="display:none;">🔒 Punya kode album privat? <button onclick="promptCode(null)">Masukkan kode</button></div>
     </div>
 
     <!-- Harga & Cara Beli -->
@@ -637,6 +641,17 @@
   </div>
 </div>
 
+<!-- KODE AKSES ALBUM PRIVAT -->
+<div class="ef" id="pw">
+  <div class="ef-card">
+    <h3 id="pwTitle">Album Privat</h3>
+    <p class="ef-sub" id="pwSub">Masukkan kode akses dari fotografer.</p>
+    <input id="pwCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Kode akses" style="text-transform:uppercase;letter-spacing:.08em"/>
+    <p class="ef-sub" id="pwErr" style="color:#ff7b7b;display:none;margin-top:10px"></p>
+    <div class="ef-act"><button class="gal-btn" onclick="pwClose()">Batal</button><button class="gal-btn gold" id="pwGo" onclick="pwSubmit()">Buka Album</button></div>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, onSnapshot, doc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -658,6 +673,7 @@
   const BG_COLORS = ['linear-gradient(135deg,#1a2030,#0d0d0d)','linear-gradient(135deg,#1a1020,#0d0d0d)','linear-gradient(135deg,#0d1a15,#0d0d0d)','linear-gradient(135deg,#1a1510,#0d0d0d)','linear-gradient(135deg,#151515,#0d0d0d)'];
 
   let allAlbums = [];
+  const pubAlbums = () => allAlbums.filter(a => a.visibility !== 'private');
   let showAll = false;
   let mShowAllFlag = false;
   let currentQ = '';
@@ -679,7 +695,7 @@
     const grid = document.getElementById('albumGrid');
     const btnAll = document.getElementById('btnAll');
     const q = filterQ.toLowerCase();
-    const filtered = allAlbums.filter(a => a.name.toLowerCase().includes(q) || (a.kategori||'').toLowerCase().includes(q) || (a.tanggal||'').toLowerCase().includes(q));
+    const filtered = pubAlbums().filter(a => a.name.toLowerCase().includes(q) || (a.kategori||'').toLowerCase().includes(q) || (a.tanggal||'').toLowerCase().includes(q));
     const visible = (!showAll && !filterQ) ? filtered.slice(0, PREVIEW_LIMIT) : filtered;
     if (filtered.length === 0) { grid.innerHTML = `<div class="loading-spinner">Tidak ada album ditemukan.</div>`; btnAll.style.display='none'; return; }
     grid.innerHTML = visible.map((a,i) => {
@@ -696,7 +712,7 @@
   function mRenderAlbums(filterQ = '') {
     mCurrentQ = filterQ;
     const q = filterQ.toLowerCase();
-    const filtered = allAlbums.filter(a => a.name.toLowerCase().includes(q) || (a.kategori||'').toLowerCase().includes(q) || (a.tanggal||'').toLowerCase().includes(q));
+    const filtered = pubAlbums().filter(a => a.name.toLowerCase().includes(q) || (a.kategori||'').toLowerCase().includes(q) || (a.tanggal||'').toLowerCase().includes(q));
     const visible = (!mShowAllFlag && !filterQ) ? filtered.slice(0, PREVIEW_LIMIT) : filtered;
     const list = document.getElementById('mAlbumList');
     if (filtered.length === 0) { list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);">Tidak ada album ditemukan.</div>`; document.getElementById('mBtnAll').style.display='none'; return; }
@@ -894,7 +910,7 @@
   };
 
   // ── GALLERY + PEMBAYARAN (lewat Cloudflare Worker, lihat folder worker/) ──
-  const WORKER_URL = 'https://rams-gallery.ramsgallery.workers.dev'; // contoh: https://rams-gallery.namakamu.workers.dev
+  const WORKER_URL = 'GANTI_WORKER_URL'; // contoh: https://rams-gallery.namakamu.workers.dev
   const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
   const W = p => WORKER_URL.replace(/\/$/, '') + p;
@@ -950,9 +966,71 @@
   }
   window.galMode = (m) => { if (galBusy) return; galModeNow = m; galUpdateBar(); };
 
+  // ── ALBUM PRIVAT: kode akses → token dari Worker ──
+  const TOK_KEY = 'rams-tokens';
+  const tokAll = () => { try { return JSON.parse(localStorage.getItem(TOK_KEY) || '{}'); } catch (e) { return {}; } };
+  const tokSave = o => { try { localStorage.setItem(TOK_KEY, JSON.stringify(o)); } catch (e) {} };
+  const getToken = f => { const x = tokAll()[f]; return x && x.exp > Date.now() + 60000 ? x.t : ''; };
+  const setToken = (f, t, exp) => { const all = tokAll(); all[f] = { t, exp }; tokSave(all); };
+  const clearToken = f => { const all = tokAll(); delete all[f]; tokSave(all); };
+  const tokQ = f => { const t = getToken(f); return t ? '&t=' + encodeURIComponent(t) : ''; };
+  const normCode = c => String(c).replace(/[\s-]/g, '').toUpperCase();
+  const toHex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  async function deriveKey(code, saltHex) {
+    const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveBits']);
+    const salt = Uint8Array.from(saltHex.match(/../g) || [], x => parseInt(x, 16));
+    return toHex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 200000 }, km, 256));
+  }
+  async function tryUnlock(a, code) {
+    const derived = await deriveKey(code, a.accessSalt);
+    const r = await fetch(W('/unlock'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ albumId: a.id, derived }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) { setToken(d.folder, d.token, d.exp); return true; }
+    if (r.status === 429 || r.status === 503) throw new Error(d.error || 'Server sedang sibuk, coba lagi.');
+    return false;
+  }
+  let pwAlbum = null, pwOnOk = null;
+  window.promptCode = (album, onOk) => {
+    pwAlbum = album || null; pwOnOk = onOk || null;
+    $('pwTitle').textContent = album ? album.name : 'Album Privat';
+    $('pwSub').textContent = album ? 'Album ini privat. Masukkan kode akses dari fotografer.' : 'Masukkan kode akses album privat kamu.';
+    $('pwCode').value = ''; $('pwErr').style.display = 'none';
+    $('pw').classList.add('open'); setTimeout(() => $('pwCode').focus(), 50);
+  };
+  window.pwClose = () => $('pw').classList.remove('open');
+  window.pwSubmit = async () => {
+    const code = normCode($('pwCode').value), err = $('pwErr'), btn = $('pwGo');
+    if (code.length < 4) { err.textContent = 'Masukkan kode akses.'; err.style.display = ''; return; }
+    btn.disabled = true; btn.textContent = 'Memeriksa…'; err.style.display = 'none';
+    try {
+      const cands = pwAlbum ? [pwAlbum] : allAlbums.filter(a => a.visibility === 'private' && a.accessHash && a.accessSalt);
+      let hit = null;
+      for (const a of cands) { if (await tryUnlock(a, code)) { hit = a; break; } }
+      if (!hit) { err.textContent = 'Kode salah. Cek lagi kodenya.'; err.style.display = ''; }
+      else { pwClose(); (pwOnOk || (() => window.openGallery(hit.id)))(); }
+    } catch (e) { err.textContent = e.message; err.style.display = ''; }
+    btn.disabled = false; btn.textContent = 'Buka Album';
+  };
+  $('pwCode').addEventListener('keydown', e => { if (e.key === 'Enter') pwSubmit(); });
+  let deepDone = false;
+  function handleDeepLink() {
+    if (deepDone) return; deepDone = true;
+    const id = new URLSearchParams(location.search).get('akses'); if (!id) return;
+    const k = new URLSearchParams(location.hash.slice(1)).get('k');
+    history.replaceState(null, '', location.pathname);
+    const a = allAlbums.find(x => x.id === id && x.visibility === 'private' && x.accessSalt);
+    if (!a) return;
+    (async () => {
+      try { if (k && await tryUnlock(a, normCode(k))) return window.openGallery(a.id); } catch (e) {}
+      promptCode(a, () => window.openGallery(a.id));
+    })();
+  }
+  // ── END ALBUM PRIVAT ──
+
   window.openGallery = async (albumId) => {
     const a = allAlbums.find(x => x.id === albumId);
     if (!a) return;
+    if (a.visibility === 'private' && !getToken(folderId(a.drive))) return promptCode(a, () => window.openGallery(albumId));
     trackClick(albumId);
     galAlbum = a; galFiles = []; galSel = new Set(); galFolder = folderId(a.drive); editSel.clear(); galModeNow = 'dl';
     loadPending(galFolder); $('galRetry').style.display = 'none';
@@ -961,8 +1039,8 @@
     $('galMsg').style.display = ''; $('galMsg').textContent = 'Memuat foto…';
     $('gal').classList.add('open'); document.body.style.overflow = 'hidden';
     if (!galFolder) { $('galMsg').textContent = 'Link Google Drive album ini belum valid / belum diisi.'; return; }
-    try { CFG = await api('/config?folder=' + galFolder); galFiles = await api('/list?folder=' + galFolder); }
-    catch (e) { $('galMsg').textContent = 'Foto tidak bisa dimuat: ' + e.message; return; }
+    try { CFG = await api('/config?folder=' + galFolder); galFiles = await api('/list?folder=' + galFolder + tokQ(galFolder)); }
+    catch (e) { if (/Album privat/.test(e.message)) clearToken(galFolder); $('galMsg').textContent = /Album privat/.test(e.message) ? 'Sesi akses album ini sudah berakhir. Tutup galeri lalu masukkan kode lagi.' : 'Foto tidak bisa dimuat: ' + e.message; return; }
     if (!galFiles.length) { $('galMsg').textContent = 'Belum ada foto di album ini.'; return; }
     $('galMsg').style.display = 'none';
     $('galGrid').innerHTML = galFiles.map((f, i) =>
@@ -1061,7 +1139,7 @@
     galBusy = true; $('galDl').disabled = true; $('galDlTxt').textContent = 'Menyiapkan…'; renderRetry();
     try {
       const cfg = CFG;
-      const o = await api('/checkout', { folder: galFolder, ids: list.map(f => f.id), vid });
+      const o = await api('/checkout', { folder: galFolder, ids: list.map(f => f.id), vid, t: getToken(galFolder) });
       if (o.mode === 'pay') {
         await loadScript(cfg.snapUrl, { 'data-client-key': cfg.clientKey });
         const ok = await new Promise(res => window.snap.pay(o.snapToken, { onSuccess: () => res(true), onPending: () => res(true), onError: () => res(false), onClose: () => res(false) }));
@@ -1209,6 +1287,9 @@
       });
     renderAlbums(currentQ);
     mRenderAlbums(mCurrentQ);
+    const anyPriv = allAlbums.some(a => a.visibility === 'private');
+    ['privEntry', 'mPrivEntry'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = anyPriv ? '' : 'none'; });
+    handleDeepLink();
   });
 
   // ── NAV ACTIVE (desktop) ──

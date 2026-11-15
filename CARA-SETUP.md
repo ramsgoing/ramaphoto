@@ -80,6 +80,8 @@ service cloud.firestore {
     // Public bisa baca albums & settings
     match /albums/{doc} { allow read: if true; allow write: if request.auth != null; }
     match /settings/{doc} { allow read: if true; allow write: if request.auth != null; }
+    // Kode akses album privat (teks asli) — hanya admin
+    match /albumSecrets/{id} { allow read, write: if request.auth != null; }
     // Permintaan edit: klien boleh MEMBUAT (dengan batasan isi), hanya admin yang boleh baca/ubah/hapus
     match /editRequests/{id} {
       allow create: if request.resource.data.keys().hasOnly(['code','albumId','albumName','folder','files','note','clientName','clientWa','clientEmail','status','createdAt','vid'])

@@ -185,6 +185,9 @@
     .ed-actions .ed-del { margin-left: auto; color: var(--red); }
     .ed-actions .ed-del:hover { border-color: var(--red); }
     .ed-empty { padding: 40px 0; text-align: center; color: var(--muted); font-size: 14px; }
+    .badge-priv { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; background: rgba(106,170,255,.15); color: #6aaaff; font-size: 10px; font-weight: 700; vertical-align: middle; }
+    .btn-mini { padding: 7px 12px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .btn-mini:hover { border-color: var(--gold); }
   </style>
 </head>
 <body>
@@ -397,6 +400,24 @@
       </select>
     </div>
     <div class="field">
+      <label>VISIBILITAS ALBUM</label>
+      <select id="modalVis" onchange="visChanged()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+        <option value="public">Publik (tampil di website)</option>
+        <option value="private">Privat (tersembunyi, perlu kode akses)</option>
+      </select>
+      <div id="modalPrivWrap" style="display:none;margin-top:10px;">
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="modalCode" placeholder="Kode akses (min. 6 karakter)" autocomplete="off" style="flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;"/>
+          <button type="button" class="btn-mini" onclick="genCode()">Acak</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:8px;">Album privat tidak muncul di daftar website. Pengunjung membukanya dengan kode ini. Pakai tombol <b>Acak</b> supaya sulit ditebak. Mengganti kode mencabut akses kode lama.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <button type="button" class="btn-mini" onclick="copyAccess(true)">Salin link + kode</button>
+          <button type="button" class="btn-mini" onclick="copyAccess(false)">Salin link saja</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
       <label>PEMBAYARAN ALBUM INI</label>
       <select id="modalPayMode" onchange="document.getElementById('modalPayPriceWrap').style.display = this.value === 'custom' ? 'block' : 'none'" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
         <option value="default">Ikuti pengaturan global</option>
@@ -429,7 +450,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAgIIyi08oxaHMnqJHiSEDStxHNMTzZ5oo",
@@ -730,7 +751,7 @@
     </div></td>`;
     return `<tr data-id="${a.id}">
       ${orderBtns}
-      <td><div class="album-name-cell">${thumb}<div><div class="album-name-text">${a.name}</div><div class="album-sub-text">${a.foto||0} Foto</div></div></div></td>
+      <td><div class="album-name-cell">${thumb}<div><div class="album-name-text">${a.name}${a.visibility==='private' ? '<span class="badge-priv">🔒 Privat</span>' : ''}</div><div class="album-sub-text">${a.foto||0} Foto</div></div></div></td>
       ${minimal ? '' : `<td><span class="badge ${badgeClass(a.kategori||'')}">${a.kategori||'-'}</span></td>`}
       <td style="color:var(--muted);font-size:13px;">${a.tanggal||'-'}</td>
       <td style="font-weight:600;">${Number(a.foto||0).toLocaleString('id')}</td>
@@ -748,6 +769,31 @@
   }
 
   // ── MODAL ──
+  // ── ALBUM PRIVAT ──
+  const normCode = c => String(c).replace(/[\s-]/g, '').toUpperCase();
+  const toHex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  const randHex = n => toHex(crypto.getRandomValues(new Uint8Array(n)));
+  async function deriveKey(code, saltHex) {
+    const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveBits']);
+    const salt = Uint8Array.from(saltHex.match(/../g) || [], x => parseInt(x, 16));
+    return toHex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 200000 }, km, 256));
+  }
+  const sha256hex = async t => toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)));
+  const CODE_ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let loadedSecret = '';
+  window.genCode = () => {
+    const c = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => CODE_ALPHA[b % 32]).join('');
+    document.getElementById('modalCode').value = c.match(/.{4}/g).join('-');
+  };
+  window.visChanged = () => { document.getElementById('modalPrivWrap').style.display = document.getElementById('modalVis').value === 'private' ? 'block' : 'none'; };
+  window.copyAccess = async (withCode) => {
+    if (!editingId) { showToast('Simpan album dulu, baru link akses tersedia.', 'error'); return; }
+    const code = normCode(document.getElementById('modalCode').value);
+    const link = `${location.origin}/?akses=${editingId}` + (withCode && code ? `#k=${encodeURIComponent(code)}` : '');
+    try { await navigator.clipboard.writeText(link); showToast('Link disalin', 'success'); }
+    catch (e) { prompt('Salin link ini:', link); }
+  };
+
   window.openModal = async (id = null) => {
     editingId = id;
     selectedFile = null;
@@ -768,6 +814,12 @@
         document.getElementById('modalPayMode').value = a.payMode || 'default';
         document.getElementById('modalPayPrice').value = a.payPrice ?? '';
         document.getElementById('modalPayPriceWrap').style.display = a.payMode === 'custom' ? 'block' : 'none';
+        document.getElementById('modalVis').value = a.visibility === 'private' ? 'private' : 'public';
+        document.getElementById('modalCode').value = ''; loadedSecret = '';
+        if (a.visibility === 'private') {
+          try { const sd = await getDoc(doc(db, 'albumSecrets', id)); if (sd.exists()) { loadedSecret = sd.data().code || ''; document.getElementById('modalCode').value = (loadedSecret.match(/.{1,4}/g) || []).join('-'); } } catch (e) {}
+        }
+        visChanged();
         currentThumbUrl = a.thumbUrl || '';
         if (a.thumbUrl) {
           document.getElementById('thumbPreview').src = a.thumbUrl;
@@ -784,6 +836,8 @@
       document.getElementById('modalPayMode').value = 'default';
       document.getElementById('modalPayPrice').value = '';
       document.getElementById('modalPayPriceWrap').style.display = 'none';
+      document.getElementById('modalVis').value = 'public'; document.getElementById('modalCode').value = ''; loadedSecret = '';
+      visChanged();
     }
     document.getElementById('albumModal').classList.add('open');
   };
@@ -905,13 +959,35 @@
         thumbUrl,
       };
 
+      // visibilitas: publik / privat (kode akses disimpan sebagai hash berlapis, bukan teks biasa)
+      const vis = document.getElementById('modalVis').value;
+      data.visibility = vis;
+      let newSecret = null;
+      if (vis === 'private') {
+        if (!/folders\/[\w-]+|[?&]id=[\w-]+/.test(data.drive)) throw new Error('Album privat wajib punya link folder Google Drive.');
+        const raw = normCode(document.getElementById('modalCode').value);
+        const cur = editingId ? allAlbums.find(x => x.id === editingId) : null;
+        const hasHash = !!(cur && cur.visibility === 'private' && cur.accessHash);
+        if (!raw && !hasHash) throw new Error('Album privat wajib punya kode akses.');
+        if (raw && raw.length < 6) throw new Error('Kode akses minimal 6 karakter.');
+        if (raw && !(hasHash && raw === normCode(loadedSecret))) {
+          const salt = randHex(16);
+          data.accessSalt = salt; data.accessHash = await sha256hex(await deriveKey(raw, salt)); newSecret = raw;
+        }
+      } else { data.accessSalt = null; data.accessHash = null; }
+
+      let albumId = editingId;
       if (editingId) {
         await updateDoc(doc(db, 'albums', editingId), data);
-        showToast('Album berhasil diperbarui!', 'success');
       } else {
-        await addDoc(collection(db, 'albums'), { ...data, createdAt: serverTimestamp() });
-        showToast('Album berhasil ditambahkan!', 'success');
+        albumId = (await addDoc(collection(db, 'albums'), { ...data, createdAt: serverTimestamp() })).id;
       }
+      if (vis === 'private' && newSecret) {
+        try { await setDoc(doc(db, 'albumSecrets', albumId), { code: newSecret }); }
+        catch (e) { showToast('Album tersimpan, tapi kode tidak bisa disimpan untuk dilihat lagi (cek rules albumSecrets).', 'error'); }
+      }
+      if (vis === 'public') { try { await deleteDoc(doc(db, 'albumSecrets', albumId)); } catch (e) {} }
+      showToast(editingId ? 'Album berhasil diperbarui!' : 'Album berhasil ditambahkan!', 'success');
 
       closeModal();
     } catch (e) {
