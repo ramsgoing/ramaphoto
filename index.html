@@ -607,7 +607,7 @@
     <button class="gal-btn gold" id="galDl" onclick="galDownload()"><span id="galDlIco">⬇</span> <span id="galDlTxt">Download Semua</span></button>
     <button class="gal-btn" onclick="galClose()">✕</button>
   </div>
-  <div class="gal-modes"><button id="modeDl" class="gal-mode on" onclick="galMode('dl')">⬇ Download</button><button id="modeEdit" class="gal-mode" onclick="galMode('edit')">✎ Pilih Edit</button></div>
+  <div class="gal-modes" id="galModes"><button id="modeDl" class="gal-mode on" onclick="galMode('dl')">⬇ Download</button><button id="modeEdit" class="gal-mode" onclick="galMode('edit')">✎ Pilih Edit</button></div>
   <div class="gal-prog"><div id="galProg"></div></div>
   <div class="gal-body"><div id="galRetry" class="gal-retry" style="display:none"></div><div id="galGrid" class="gal-grid"></div><div id="galMsg" class="gal-msg"></div></div>
 </div>
@@ -674,6 +674,9 @@
 
   let allAlbums = [];
   const pubAlbums = () => allAlbums.filter(a => a.visibility !== 'private');
+  // Fitur per album: 'download' (bawaan) | 'edit' | 'both' — diatur di admin
+  const albumMode = a => a && ['download', 'edit', 'both'].includes(a.mode) ? a.mode : 'download';
+  const galLabel = a => ({ download: '📷 Lihat & Download Foto', edit: '📷 Lihat & Pilih Foto untuk Diedit', both: '📷 Lihat Foto' })[albumMode(a)];
   let showAll = false;
   let mShowAllFlag = false;
   let currentQ = '';
@@ -702,7 +705,7 @@
       const ts = a.thumbUrl ? `background:url('${a.thumbUrl}') center/cover no-repeat;` : `background:${BG_COLORS[i%BG_COLORS.length]};`;
       const ti = a.thumbUrl ? '' : `<svg width="48" height="48" fill="none" stroke="#333" stroke-width="1.2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
       const newBadge = isNew(a.createdAt) ? `<div class="badge-new">NEW</div>` : '';
-      return `<div class="album-card"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div>${newBadge}</div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div><div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer">${a.drive?`<button class="btn-drive" style="background:var(--gold);color:#111;font-weight:700;margin-bottom:6px;" onclick="openGallery('${a.id}')">📷 Lihat & Download Foto</button>`:''}<a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive" onclick="trackClick('${a.id}')">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a><a href="https://saweria.co/ramsgoing" target="_blank" class="btn-drive" style="margin-top:6px;color:var(--muted);font-size:12px;">☕ Support Me</a></div></div>`;
+      return `<div class="album-card"><div class="album-thumb"><div class="thumb-placeholder" style="${ts}">${ti}</div><div class="photo-count">${Number(a.foto||0).toLocaleString('id')} Foto</div>${newBadge}</div><div class="album-info"><div class="album-name"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>${a.name}</div><div class="album-meta"><span>${a.kategori||''}</span><span>${a.tanggal||''}</span></div></div><div class="album-footer">${a.drive?`<button class="btn-drive" style="background:var(--gold);color:#111;font-weight:700;margin-bottom:6px;" onclick="openGallery('${a.id}')">${galLabel(a)}</button>`:''}<a href="${a.drive||'#'}" ${a.drive?'target="_blank"':''} class="btn-drive" onclick="trackClick('${a.id}')">${driveIcon()} ${a.drive?'Buka Album':'Link Belum Tersedia'}</a><a href="https://saweria.co/ramsgoing" target="_blank" class="btn-drive" style="margin-top:6px;color:var(--muted);font-size:12px;">☕ Support Me</a></div></div>`;
     }).join('');
     if (!filterQ && !showAll && filtered.length > PREVIEW_LIMIT) { btnAll.style.display=''; btnAll.innerHTML=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Lihat Semua Album (${filtered.length})`; }
     else { btnAll.style.display='none'; }
@@ -768,6 +771,7 @@
     document.getElementById('mDetailMeta').innerHTML = `<span>📅 ${a.tanggal||'-'}</span><span>• ${a.kategori||'-'}</span>`;
     document.getElementById('mDetailCount').textContent = `${Number(a.foto||0).toLocaleString('id')} Foto`;
     const gbtn = document.getElementById('mDetailGalBtn');
+    gbtn.textContent = galLabel(a);
     gbtn.style.display = a.drive ? '' : 'none';
     gbtn.onclick = () => openGallery(a.id);
     const btn = document.getElementById('mDetailDriveBtn');
@@ -910,7 +914,7 @@
   };
 
   // ── GALLERY + PEMBAYARAN (lewat Cloudflare Worker, lihat folder worker/) ──
-  const WORKER_URL = 'https://rams-gallery.ramsgallery.workers.dev'; // contoh: https://rams-gallery.namakamu.workers.dev
+  const WORKER_URL = 'GANTI_WORKER_URL'; // contoh: https://rams-gallery.namakamu.workers.dev
   const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
   const W = p => WORKER_URL.replace(/\/$/, '') + p;
@@ -964,7 +968,7 @@
       el.querySelector('.gal-chk').textContent = on ? (edit ? '✎' : '✓') : '';
     });
   }
-  window.galMode = (m) => { if (galBusy) return; galModeNow = m; galUpdateBar(); };
+  window.galMode = (m) => { if (galBusy || albumMode(galAlbum) !== 'both') return; galModeNow = m; galUpdateBar(); };
 
   // ── ALBUM PRIVAT: kode akses → token dari Worker ──
   const TOK_KEY = 'rams-tokens';
@@ -986,8 +990,9 @@
     const r = await fetch(W('/unlock'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ albumId: a.id, derived }) });
     const d = await r.json().catch(() => ({}));
     if (r.ok) { setToken(d.folder, d.token, d.exp); return true; }
-    if (r.status === 429 || r.status === 503) throw new Error(d.error || 'Server sedang sibuk, coba lagi.');
-    return false;
+    if (r.status === 403) return false;   // hanya 403 yang artinya kode memang salah
+    if (r.status === 404) throw new Error('Server belum mengenali fitur album privat. Worker perlu di-deploy ulang, atau alamat Worker di index.html belum benar.');
+    throw new Error(d.error || ('Server bermasalah (kode ' + r.status + '). Coba lagi sebentar.'));
   }
   let pwAlbum = null, pwOnOk = null;
   window.promptCode = (album, onOk) => {
@@ -1004,6 +1009,7 @@
     btn.disabled = true; btn.textContent = 'Memeriksa…'; err.style.display = 'none';
     try {
       const cands = pwAlbum ? [pwAlbum] : allAlbums.filter(a => a.visibility === 'private' && a.accessHash && a.accessSalt);
+      if (!cands.length) throw new Error('Belum ada album privat yang siap dibuka. Hubungi fotografer.');
       let hit = null;
       for (const a of cands) { if (await tryUnlock(a, code)) { hit = a; break; } }
       if (!hit) { err.textContent = 'Kode salah. Cek lagi kodenya.'; err.style.display = ''; }
@@ -1032,7 +1038,8 @@
     if (!a) return;
     if (a.visibility === 'private' && !getToken(folderId(a.drive))) return promptCode(a, () => window.openGallery(albumId));
     trackClick(albumId);
-    galAlbum = a; galFiles = []; galSel = new Set(); galFolder = folderId(a.drive); editSel.clear(); galModeNow = 'dl';
+    galAlbum = a; galFiles = []; galSel = new Set(); galFolder = folderId(a.drive); editSel.clear(); galModeNow = albumMode(a) === 'edit' ? 'edit' : 'dl';
+    $('galModes').style.display = albumMode(a) === 'both' ? '' : 'none';
     loadPending(galFolder); $('galRetry').style.display = 'none';
     $('galTitle').textContent = a.name; $('galSub').textContent = '';
     $('galGrid').innerHTML = ''; $('galProg').style.width = '0';

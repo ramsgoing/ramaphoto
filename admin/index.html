@@ -400,6 +400,15 @@
       </select>
     </div>
     <div class="field">
+      <label>FITUR GALERI</label>
+      <select id="modalMode" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+        <option value="download">Download saja</option>
+        <option value="edit">Request edit saja (tanpa download)</option>
+        <option value="both">Download + Request edit</option>
+      </select>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px;">Menentukan tombol apa yang dilihat pengunjung di album ini. Contoh: album acara publik cukup "Download saja", album klien privat pakai "Request edit saja".</p>
+    </div>
+    <div class="field">
       <label>VISIBILITAS ALBUM</label>
       <select id="modalVis" onchange="visChanged()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
         <option value="public">Publik (tampil di website)</option>
@@ -751,7 +760,7 @@
     </div></td>`;
     return `<tr data-id="${a.id}">
       ${orderBtns}
-      <td><div class="album-name-cell">${thumb}<div><div class="album-name-text">${a.name}${a.visibility==='private' ? '<span class="badge-priv">🔒 Privat</span>' : ''}</div><div class="album-sub-text">${a.foto||0} Foto</div></div></div></td>
+      <td><div class="album-name-cell">${thumb}<div><div class="album-name-text">${a.name}${a.visibility==='private' ? '<span class="badge-priv">🔒 Privat</span>' : ''}${a.mode==='edit' ? '<span class="badge-priv">✎ Edit saja</span>' : a.mode==='both' ? '<span class="badge-priv">⬇ + ✎</span>' : ''}</div><div class="album-sub-text">${a.foto||0} Foto</div></div></div></td>
       ${minimal ? '' : `<td><span class="badge ${badgeClass(a.kategori||'')}">${a.kategori||'-'}</span></td>`}
       <td style="color:var(--muted);font-size:13px;">${a.tanggal||'-'}</td>
       <td style="font-weight:600;">${Number(a.foto||0).toLocaleString('id')}</td>
@@ -815,6 +824,7 @@
         document.getElementById('modalPayPrice').value = a.payPrice ?? '';
         document.getElementById('modalPayPriceWrap').style.display = a.payMode === 'custom' ? 'block' : 'none';
         document.getElementById('modalVis').value = a.visibility === 'private' ? 'private' : 'public';
+        document.getElementById('modalMode').value = ['download','edit','both'].includes(a.mode) ? a.mode : 'download';
         document.getElementById('modalCode').value = ''; loadedSecret = '';
         if (a.visibility === 'private') {
           try { const sd = await getDoc(doc(db, 'albumSecrets', id)); if (sd.exists()) { loadedSecret = sd.data().code || ''; document.getElementById('modalCode').value = (loadedSecret.match(/.{1,4}/g) || []).join('-'); } } catch (e) {}
@@ -837,6 +847,7 @@
       document.getElementById('modalPayPrice').value = '';
       document.getElementById('modalPayPriceWrap').style.display = 'none';
       document.getElementById('modalVis').value = 'public'; document.getElementById('modalCode').value = ''; loadedSecret = '';
+      document.getElementById('modalMode').value = 'download';
       visChanged();
     }
     document.getElementById('albumModal').classList.add('open');
@@ -962,6 +973,7 @@
       // visibilitas: publik / privat (kode akses disimpan sebagai hash berlapis, bukan teks biasa)
       const vis = document.getElementById('modalVis').value;
       data.visibility = vis;
+      data.mode = document.getElementById('modalMode').value;
       let newSecret = null;
       if (vis === 'private') {
         if (!/folders\/[\w-]+|[?&]id=[\w-]+/.test(data.drive)) throw new Error('Album privat wajib punya link folder Google Drive.');
